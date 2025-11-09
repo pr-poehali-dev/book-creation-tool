@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
+import { auth, booksApi, User } from '@/lib/auth';
 
 type Character = {
   id: string;
@@ -52,13 +53,16 @@ type BookData = {
 };
 
 const Index = () => {
-  const [activeSection, setActiveSection] = useState<'home' | 'form' | 'library' | 'help'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'form' | 'library' | 'help' | 'auth'>('home');
   const [formStep, setFormStep] = useState<'basic' | 'characters' | 'illustrations' | 'settings'>('basic');
   const [books, setBooks] = useState<Array<BookData & { id: string }>>([]);
   const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [isGeneratingBook, setIsGeneratingBook] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' });
   
   const [currentCharacter, setCurrentCharacter] = useState<Omit<Character, 'id'>>({
     name: '',
@@ -89,6 +93,83 @@ const Index = () => {
     },
     generatedImages: []
   });
+
+  useEffect(() => {
+    const currentUser = auth.getUser();
+    setUser(currentUser);
+    if (currentUser) {
+      loadBooks();
+    }
+  }, []);
+
+  const loadBooks = async () => {
+    try {
+      const fetchedBooks = await booksApi.getBooks();
+      const mappedBooks = fetchedBooks.map((book: any) => ({
+        id: book.id.toString(),
+        title: book.title,
+        genre: book.genre,
+        description: book.description,
+        idea: book.idea,
+        characters: book.characters.map((c: any) => ({
+          id: c.id.toString(),
+          name: c.name,
+          age: c.age,
+          appearance: c.appearance,
+          personality: c.personality,
+          background: c.background,
+          motivation: c.motivation,
+          role: c.role
+        })),
+        turningPoint: book.turning_point,
+        uniqueFeatures: book.unique_features,
+        pages: book.pages,
+        writingStyle: book.writing_style,
+        textTone: book.text_tone,
+        illustrations: {
+          count: book.illustrations.length,
+          style: book.illustrations[0]?.style || 'realistic',
+          colorScheme: book.illustrations[0]?.color_scheme || 'warm',
+          mood: book.illustrations[0]?.mood || 'dramatic'
+        },
+        generatedImages: book.illustrations.map((i: any) => i.image_url),
+        chapters: book.chapters.map((ch: any) => ({
+          title: ch.title,
+          text: ch.text
+        }))
+      }));
+      setBooks(mappedBooks);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleAuth = async () => {
+    try {
+      if (authMode === 'register') {
+        const response = await auth.register(authForm.email, authForm.password, authForm.name);
+        setUser(response.user);
+        toast.success('Регистрация успешна!');
+      } else {
+        const response = await auth.login(authForm.email, authForm.password);
+        setUser(response.user);
+        toast.success('Вход выполнен!');
+      }
+      setActiveSection('home');
+      setAuthForm({ email: '', password: '', name: '' });
+      loadBooks();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    setUser(null);
+    setBooks([]);
+    setActiveSection('home');
+    toast.success('Вы вышли из аккаунта');
+  };
 
   const handleInputChange = (field: keyof BookData, value: any) => {
     setCurrentBook(prev => ({ ...prev, [field]: value }));
@@ -197,6 +278,37 @@ const Index = () => {
     }
   };
 
+  const saveBook = async () => {
+    try {
+      await booksApi.saveBook(currentBook);
+      toast.success('Книга сохранена!');
+      setActiveSection('library');
+      setFormStep('basic');
+      setCurrentBook({
+        genre: '',
+        title: '',
+        description: '',
+        idea: '',
+        characters: [],
+        turningPoint: '',
+        uniqueFeatures: '',
+        pages: '',
+        writingStyle: '',
+        textTone: '',
+        illustrations: {
+          count: 3,
+          style: 'realistic',
+          colorScheme: 'warm',
+          mood: 'dramatic'
+        },
+        generatedImages: []
+      });
+      await loadBooks();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   const generateBookText = async () => {
     setIsGeneratingBook(true);
     toast.info('Генерирую текст книги... Это может занять 1-2 минуты');
@@ -251,30 +363,13 @@ const Index = () => {
     } else if (formStep === 'illustrations') {
       setFormStep('settings');
     } else {
-      const newBook = { ...currentBook, id: Date.now().toString() };
-      setBooks(prev => [...prev, newBook]);
-      toast.success('Книга создана!');
-      setActiveSection('library');
-      setFormStep('basic');
-      setCurrentBook({
-        genre: '',
-        title: '',
-        description: '',
-        idea: '',
-        characters: [],
-        turningPoint: '',
-        uniqueFeatures: '',
-        pages: '',
-        writingStyle: '',
-        textTone: '',
-        illustrations: {
-          count: 3,
-          style: 'realistic',
-          colorScheme: 'warm',
-          mood: 'dramatic'
-        },
-        generatedImages: []
-      });
+      if (!user) {
+        toast.error('Войдите в аккаунт для сохранения книги');
+        setActiveSection('auth');
+        return;
+      }
+      
+      saveBook();
     }
   };
 
@@ -331,23 +426,42 @@ const Index = () => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Литературная Мастерская</h1>
-          <div className="flex gap-6">
-            {[
-              { id: 'home', label: 'Главная', icon: 'Home' },
-              { id: 'form', label: 'Создать книгу', icon: 'BookPlus' },
-              { id: 'library', label: 'Библиотека', icon: 'Library' },
-              { id: 'help', label: 'Помощь', icon: 'HelpCircle' }
-            ].map(item => (
-              <Button
-                key={item.id}
-                variant={activeSection === item.id ? 'default' : 'ghost'}
-                onClick={() => setActiveSection(item.id as any)}
-                className="gap-2"
-              >
-                <Icon name={item.icon as any} size={18} />
-                {item.label}
+          <div className="flex gap-4 items-center">
+            <div className="flex gap-6">
+              {[
+                { id: 'home', label: 'Главная', icon: 'Home' },
+                { id: 'form', label: 'Создать книгу', icon: 'BookPlus' },
+                { id: 'library', label: 'Библиотека', icon: 'Library' },
+                { id: 'help', label: 'Помощь', icon: 'HelpCircle' }
+              ].map(item => (
+                <Button
+                  key={item.id}
+                  variant={activeSection === item.id ? 'default' : 'ghost'}
+                  onClick={() => setActiveSection(item.id as any)}
+                  className="gap-2"
+                >
+                  <Icon name={item.icon as any} size={18} />
+                  {item.label}
+                </Button>
+              ))}
+            </div>
+            {user ? (
+              <div className="flex gap-3 items-center">
+                <Badge variant="secondary" className="px-3 py-1">
+                  <Icon name="User" size={14} className="mr-1" />
+                  {user.name || user.email}
+                </Badge>
+                <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+                  <Icon name="LogOut" size={14} />
+                  Выйти
+                </Button>
+              </div>
+            ) : (
+              <Button variant="default" onClick={() => setActiveSection('auth')} className="gap-2">
+                <Icon name="LogIn" size={18} />
+                Войти
               </Button>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -1100,6 +1214,86 @@ const Index = () => {
     </div>
   );
 
+  const renderAuth = () => (
+    <div className="py-12 px-6 animate-fade-in">
+      <div className="container mx-auto max-w-md">
+        <Card className="shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-3xl text-center">
+              {authMode === 'login' ? 'Вход' : 'Регистрация'}
+            </CardTitle>
+            <CardDescription className="text-center">
+              {authMode === 'login' 
+                ? 'Войдите чтобы сохранять ваши книги' 
+                : 'Создайте аккаунт для сохранения книг'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {authMode === 'register' && (
+              <div className="space-y-2">
+                <Label>Имя</Label>
+                <Input 
+                  value={authForm.name}
+                  onChange={(e) => setAuthForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ваше имя"
+                />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input 
+                type="email"
+                value={authForm.email}
+                onChange={(e) => setAuthForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="your@email.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Пароль</Label>
+              <Input 
+                type="password"
+                value={authForm.password}
+                onChange={(e) => setAuthForm(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <Button onClick={handleAuth} className="w-full gap-2" size="lg">
+              <Icon name={authMode === 'login' ? 'LogIn' : 'UserPlus'} size={20} />
+              {authMode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+            </Button>
+
+            <div className="text-center text-sm">
+              {authMode === 'login' ? (
+                <p>
+                  Нет аккаунта?{' '}
+                  <button 
+                    onClick={() => setAuthMode('register')}
+                    className="text-primary underline"
+                  >
+                    Зарегистрироваться
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Уже есть аккаунт?{' '}
+                  <button 
+                    onClick={() => setAuthMode('login')}
+                    className="text-primary underline"
+                  >
+                    Войти
+                  </button>
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {renderNavigation()}
@@ -1107,6 +1301,7 @@ const Index = () => {
       {activeSection === 'form' && renderForm()}
       {activeSection === 'library' && renderLibrary()}
       {activeSection === 'help' && renderHelp()}
+      {activeSection === 'auth' && renderAuth()}
     </div>
   );
 };

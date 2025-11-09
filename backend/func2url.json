@@ -1,3 +1,5 @@
 {
+  "auth": "https://functions.poehali.dev/f51bfe11-7c48-4da3-935f-c94ac4cea7c0",
+  "books": "https://functions.poehali.dev/b4fc3df2-e379-421e-9ffc-53e372ae00ee",
   "generate-book": "https://functions.poehali.dev/2f50210e-c8d5-4275-968b-16b64e5f5d39"
 }
