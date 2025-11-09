@@ -48,8 +48,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         writing_style = body_data.get('writingStyle', 'literary')
         text_tone = body_data.get('textTone', 'serious')
         
-        api_key = os.environ.get('GIGACHAT_API_KEY')
-        if not api_key:
+        api_key_base64 = os.environ.get('GIGACHAT_API_KEY')
+        if not api_key_base64:
             return {
                 'statusCode': 500,
                 'headers': {
@@ -60,7 +60,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'GigaChat API key not configured'})
             }
         
-        with GigaChat(credentials=api_key, verify_ssl_certs=False) as giga:
+        with GigaChat(credentials=api_key_base64, scope='GIGACHAT_API_PERS', verify_ssl_certs=False) as giga:
             characters_text = '\n'.join([
                 f"- {char['name']} ({char['role']}): {char.get('personality', '')} | Мотивация: {char.get('motivation', '')}"
                 for char in characters
