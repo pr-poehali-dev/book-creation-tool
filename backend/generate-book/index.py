@@ -1,11 +1,11 @@
 import json
 import os
+import requests
 from typing import Dict, Any, List
-from openai import OpenAI
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Generate full book text using OpenAI GPT-4 based on book data
+    Business: Generate full book text using GigaChat from Sber based on book data
     Args: event with httpMethod, body containing book data; context with request_id
     Returns: HTTP response with generated book chapters
     '''
@@ -48,7 +48,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         writing_style = body_data.get('writingStyle', 'literary')
         text_tone = body_data.get('textTone', 'serious')
         
-        api_key = os.environ.get('OPENAI_API_KEY')
+        api_key = os.environ.get('GIGACHAT_API_KEY')
         if not api_key:
             return {
                 'statusCode': 500,
@@ -57,10 +57,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'Access-Control-Allow-Origin': '*'
                 },
                 'isBase64Encoded': False,
-                'body': json.dumps({'error': 'OpenAI API key not configured'})
+                'body': json.dumps({'error': 'GigaChat API key not configured'})
             }
         
-        client = OpenAI(api_key=api_key)
+        auth_response = requests.post(
+            'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
+            headers={'Authorization': f'Bearer {api_key}', 'RqUID': context.request_id},
+            verify=False
+        )
+        
+        if auth_response.status_code != 200:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': 'GigaChat authorization failed'})
+            }
+        
+        access_token = auth_response.json()['access_token']
         
         characters_text = '\n'.join([
             f"- {char['name']} ({char['role']}): {char.get('personality', '')} | Мотивация: {char.get('motivation', '')}"
@@ -103,17 +120,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
 И так далее."""
 
-        response = client.chat.completions.create(
-            model='gpt-4o',
-            messages=[
-                {'role': 'system', 'content': 'Ты талантливый писатель, создающий захватывающие книги на русском языке.'},
-                {'role': 'user', 'content': prompt}
-            ],
-            max_tokens=16000,
-            temperature=0.9
+        response = requests.post(
+            'https://gigachat.devices.sberbank.ru/api/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'GigaChat',
+                'messages': [
+                    {'role': 'system', 'content': 'Ты талантливый писатель, создающий захватывающие книги на русском языке.'},
+                    {'role': 'user', 'content': prompt}
+                ],
+                'max_tokens': 8000,
+                'temperature': 0.9
+            },
+            verify=False
         )
         
-        book_text = response.choices[0].message.content
+        if response.status_code != 200:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({'error': f'GigaChat request failed: {response.text}'})
+            }
+        
+        book_text = response.json()['choices'][0]['message']['content']
         
         chapters = []
         current_chapter = None
