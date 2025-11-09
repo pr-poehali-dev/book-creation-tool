@@ -7,45 +7,181 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
+
+type Character = {
+  id: string;
+  name: string;
+  age: string;
+  appearance: string;
+  personality: string;
+  background: string;
+  motivation: string;
+  role: 'main' | 'secondary' | 'villain';
+};
+
+type IllustrationSettings = {
+  count: number;
+  style: string;
+  colorScheme: string;
+  mood: string;
+};
 
 type BookData = {
   genre: string;
   title: string;
   description: string;
   idea: string;
-  mainCharacters: string;
-  secondaryCharacters: string;
-  villains: string;
+  characters: Character[];
   turningPoint: string;
   uniqueFeatures: string;
   pages: string;
   writingStyle: string;
   textTone: string;
+  illustrations: IllustrationSettings;
+  generatedImages: string[];
 };
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState<'home' | 'form' | 'library' | 'help'>('home');
-  const [formStep, setFormStep] = useState<'basic' | 'settings'>('basic');
+  const [formStep, setFormStep] = useState<'basic' | 'characters' | 'illustrations' | 'settings'>('basic');
   const [books, setBooks] = useState<Array<BookData & { id: string }>>([]);
+  const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  
+  const [currentCharacter, setCurrentCharacter] = useState<Omit<Character, 'id'>>({
+    name: '',
+    age: '',
+    appearance: '',
+    personality: '',
+    background: '',
+    motivation: '',
+    role: 'main'
+  });
+
   const [currentBook, setCurrentBook] = useState<BookData>({
     genre: '',
     title: '',
     description: '',
     idea: '',
-    mainCharacters: '',
-    secondaryCharacters: '',
-    villains: '',
+    characters: [],
     turningPoint: '',
     uniqueFeatures: '',
     pages: '',
     writingStyle: '',
-    textTone: ''
+    textTone: '',
+    illustrations: {
+      count: 3,
+      style: 'realistic',
+      colorScheme: 'warm',
+      mood: 'dramatic'
+    },
+    generatedImages: []
   });
 
-  const handleInputChange = (field: keyof BookData, value: string) => {
+  const handleInputChange = (field: keyof BookData, value: any) => {
     setCurrentBook(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCharacterChange = (field: keyof Omit<Character, 'id'>, value: string) => {
+    setCurrentCharacter(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addCharacter = () => {
+    if (!currentCharacter.name) {
+      toast.error('Введите имя персонажа');
+      return;
+    }
+    
+    if (editingCharacter) {
+      setCurrentBook(prev => ({
+        ...prev,
+        characters: prev.characters.map(c => 
+          c.id === editingCharacter.id ? { ...currentCharacter, id: editingCharacter.id } : c
+        )
+      }));
+      toast.success('Персонаж обновлён');
+    } else {
+      const newCharacter: Character = {
+        ...currentCharacter,
+        id: Date.now().toString()
+      };
+      setCurrentBook(prev => ({
+        ...prev,
+        characters: [...prev.characters, newCharacter]
+      }));
+      toast.success('Персонаж добавлен');
+    }
+    
+    setCurrentCharacter({
+      name: '',
+      age: '',
+      appearance: '',
+      personality: '',
+      background: '',
+      motivation: '',
+      role: 'main'
+    });
+    setEditingCharacter(null);
+    setIsCharacterDialogOpen(false);
+  };
+
+  const editCharacter = (character: Character) => {
+    setEditingCharacter(character);
+    setCurrentCharacter({
+      name: character.name,
+      age: character.age,
+      appearance: character.appearance,
+      personality: character.personality,
+      background: character.background,
+      motivation: character.motivation,
+      role: character.role
+    });
+    setIsCharacterDialogOpen(true);
+  };
+
+  const deleteCharacter = (id: string) => {
+    setCurrentBook(prev => ({
+      ...prev,
+      characters: prev.characters.filter(c => c.id !== id)
+    }));
+    toast.success('Персонаж удалён');
+  };
+
+  const generateIllustrations = async () => {
+    setIsGeneratingImages(true);
+    toast.info(`Генерирую ${currentBook.illustrations.count} иллюстраций...`);
+    
+    const images: string[] = [];
+    
+    for (let i = 0; i < currentBook.illustrations.count; i++) {
+      try {
+        const prompt = `Book illustration for "${currentBook.title}", ${currentBook.genre} genre, ${currentBook.illustrations.style} art style, ${currentBook.illustrations.colorScheme} color palette, ${currentBook.illustrations.mood} mood, scene ${i + 1} of ${currentBook.illustrations.count}, professional book cover quality`;
+        
+        const response = await fetch('https://poehali.dev/.api/images/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        
+        const data = await response.json();
+        if (data.url) {
+          images.push(data.url);
+          toast.success(`Иллюстрация ${i + 1}/${currentBook.illustrations.count} готова`);
+        }
+      } catch (error) {
+        console.error('Error generating image:', error);
+        toast.error(`Ошибка при создании иллюстрации ${i + 1}`);
+      }
+    }
+    
+    setCurrentBook(prev => ({ ...prev, generatedImages: images }));
+    setIsGeneratingImages(false);
+    toast.success('Все иллюстрации созданы!');
   };
 
   const handleNextStep = () => {
@@ -54,12 +190,19 @@ const Index = () => {
         toast.error('Заполните обязательные поля');
         return;
       }
+      setFormStep('characters');
+    } else if (formStep === 'characters') {
+      if (currentBook.characters.length === 0) {
+        toast.error('Добавьте хотя бы одного персонажа');
+        return;
+      }
+      setFormStep('illustrations');
+    } else if (formStep === 'illustrations') {
       setFormStep('settings');
-      toast.success('Переходим к настройкам книги');
     } else {
       const newBook = { ...currentBook, id: Date.now().toString() };
       setBooks(prev => [...prev, newBook]);
-      toast.success('Книга создана! Скоро будет доступна для скачивания');
+      toast.success('Книга создана!');
       setActiveSection('library');
       setFormStep('basic');
       setCurrentBook({
@@ -67,16 +210,57 @@ const Index = () => {
         title: '',
         description: '',
         idea: '',
-        mainCharacters: '',
-        secondaryCharacters: '',
-        villains: '',
+        characters: [],
         turningPoint: '',
         uniqueFeatures: '',
         pages: '',
         writingStyle: '',
-        textTone: ''
+        textTone: '',
+        illustrations: {
+          count: 3,
+          style: 'realistic',
+          colorScheme: 'warm',
+          mood: 'dramatic'
+        },
+        generatedImages: []
       });
     }
+  };
+
+  const downloadBook = (book: BookData & { id: string }) => {
+    let content = `${book.title}\n${'='.repeat(book.title.length)}\n\n`;
+    content += `Жанр: ${book.genre}\n`;
+    content += `Стиль: ${book.writingStyle}\n`;
+    content += `Тон: ${book.textTone}\n\n`;
+    content += `${book.description}\n\n`;
+    content += `ГЛАВНАЯ ИДЕЯ\n${book.idea}\n\n`;
+    content += `ПЕРСОНАЖИ\n`;
+    book.characters.forEach(char => {
+      content += `\n${char.name} (${char.role})\n`;
+      content += `Возраст: ${char.age}\n`;
+      content += `Внешность: ${char.appearance}\n`;
+      content += `Характер: ${char.personality}\n`;
+      content += `Предыстория: ${char.background}\n`;
+      content += `Мотивация: ${char.motivation}\n`;
+    });
+    content += `\n\nПОВОРОТНЫЙ МОМЕНТ\n${book.turningPoint}\n\n`;
+    content += `УНИКАЛЬНЫЕ ФИШКИ\n${book.uniqueFeatures}\n\n`;
+    
+    if (book.generatedImages.length > 0) {
+      content += `\nИЛЛЮСТРАЦИИ:\n`;
+      book.generatedImages.forEach((url, idx) => {
+        content += `${idx + 1}. ${url}\n`;
+      });
+    }
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${book.title.replace(/[^a-zа-яё0-9]/gi, '_')}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success('Книга скачана!');
   };
 
   const renderNavigation = () => (
@@ -115,8 +299,8 @@ const Index = () => {
             Создайте свою книгу с помощью ИИ
           </h2>
           <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-            Заполните анкету, опишите персонажей и сюжет — мы создадим для вас готовую книгу,
-            которую можно скачать и отредактировать
+            Заполните анкету, создайте детальных персонажей, сгенерируйте иллюстрации — 
+            получите готовую книгу для скачивания
           </p>
           <Button 
             size="lg" 
@@ -132,22 +316,27 @@ const Index = () => {
       <section className="py-16 px-6 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <h3 className="text-4xl font-bold text-center mb-12">Как это работает</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {[
               {
                 icon: 'FileText',
-                title: 'Заполните анкету',
-                description: 'Опишите жанр, сюжет, персонажей и ключевые моменты истории'
+                title: 'Опишите книгу',
+                description: 'Жанр, сюжет, идея и уникальные особенности'
               },
               {
-                icon: 'Settings',
-                title: 'Настройте параметры',
-                description: 'Выберите объём, стиль повествования и тон текста'
+                icon: 'Users',
+                title: 'Создайте персонажей',
+                description: 'Детальные анкеты героев с характером и мотивацией'
+              },
+              {
+                icon: 'Image',
+                title: 'Сгенерируйте иллюстрации',
+                description: 'ИИ создаст иллюстрации в выбранном стиле'
               },
               {
                 icon: 'Download',
-                title: 'Получите книгу',
-                description: 'Скачайте готовый текст и отредактируйте при необходимости'
+                title: 'Скачайте книгу',
+                description: 'Получите готовый файл с текстом и картинками'
               }
             ].map((step, idx) => (
               <Card key={idx} className="animate-scale-in hover:shadow-lg transition-shadow">
@@ -155,8 +344,8 @@ const Index = () => {
                   <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center mb-4">
                     <Icon name={step.icon as any} size={28} className="text-accent-foreground" />
                   </div>
-                  <CardTitle className="text-2xl">{step.title}</CardTitle>
-                  <CardDescription className="text-base leading-relaxed">
+                  <CardTitle className="text-xl">{step.title}</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
                     {step.description}
                   </CardDescription>
                 </CardHeader>
@@ -168,25 +357,158 @@ const Index = () => {
     </div>
   );
 
+  const renderCharacterDialog = () => (
+    <Dialog open={isCharacterDialogOpen} onOpenChange={setIsCharacterDialogOpen}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">
+            {editingCharacter ? 'Редактировать персонажа' : 'Добавить персонажа'}
+          </DialogTitle>
+          <DialogDescription>
+            Заполните детальную анкету для создания живого персонажа
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Имя персонажа *</Label>
+              <Input 
+                value={currentCharacter.name}
+                onChange={(e) => handleCharacterChange('name', e.target.value)}
+                placeholder="Иван Петров"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Возраст</Label>
+              <Input 
+                value={currentCharacter.age}
+                onChange={(e) => handleCharacterChange('age', e.target.value)}
+                placeholder="25 лет"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Роль в истории</Label>
+            <Select 
+              value={currentCharacter.role} 
+              onValueChange={(val) => handleCharacterChange('role', val as any)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="main">Главный герой</SelectItem>
+                <SelectItem value="secondary">Второстепенный персонаж</SelectItem>
+                <SelectItem value="villain">Антагонист/Злодей</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Внешность</Label>
+            <Textarea 
+              value={currentCharacter.appearance}
+              onChange={(e) => handleCharacterChange('appearance', e.target.value)}
+              placeholder="Высокий, светлые волосы, голубые глаза..."
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Характер и личность</Label>
+            <Textarea 
+              value={currentCharacter.personality}
+              onChange={(e) => handleCharacterChange('personality', e.target.value)}
+              placeholder="Смелый, но импульсивный. Любит справедливость..."
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Предыстория</Label>
+            <Textarea 
+              value={currentCharacter.background}
+              onChange={(e) => handleCharacterChange('background', e.target.value)}
+              placeholder="Вырос в деревне, потерял родителей в детстве..."
+              rows={4}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Мотивация и цели</Label>
+            <Textarea 
+              value={currentCharacter.motivation}
+              onChange={(e) => handleCharacterChange('motivation', e.target.value)}
+              placeholder="Хочет отомстить за семью и защитить королевство..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button onClick={addCharacter} className="flex-1">
+              <Icon name="Check" size={18} className="mr-2" />
+              {editingCharacter ? 'Сохранить' : 'Добавить'}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsCharacterDialogOpen(false);
+                setEditingCharacter(null);
+                setCurrentCharacter({
+                  name: '',
+                  age: '',
+                  appearance: '',
+                  personality: '',
+                  background: '',
+                  motivation: '',
+                  role: 'main'
+                });
+              }}
+            >
+              Отмена
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   const renderForm = () => (
     <div className="py-12 px-6 animate-fade-in">
       <div className="container mx-auto max-w-3xl">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            {['basic', 'characters', 'illustrations', 'settings'].map((step, idx) => (
+              <div key={step} className="flex items-center flex-1">
+                <div className={`h-2 w-full rounded ${
+                  formStep === step ? 'bg-primary' : 
+                  ['basic', 'characters', 'illustrations', 'settings'].indexOf(formStep) > idx ? 'bg-primary/50' : 'bg-muted'
+                }`} />
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Шаг {['basic', 'characters', 'illustrations', 'settings'].indexOf(formStep) + 1} из 4
+          </p>
+        </div>
+
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle className="text-3xl">
-              {formStep === 'basic' ? 'Основная информация о книге' : 'Настройки стиля и формата'}
+              {formStep === 'basic' && 'Основная информация'}
+              {formStep === 'characters' && 'Персонажи'}
+              {formStep === 'illustrations' && 'Иллюстрации'}
+              {formStep === 'settings' && 'Настройки книги'}
             </CardTitle>
-            <CardDescription className="text-base">
-              {formStep === 'basic' 
-                ? 'Расскажите нам о вашей будущей книге' 
-                : 'Настройте детали для создания идеального текста'}
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {formStep === 'basic' ? (
+            {formStep === 'basic' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="genre" className="text-base">Жанр книги *</Label>
+                  <Label htmlFor="genre">Жанр книги *</Label>
                   <Select value={currentBook.genre} onValueChange={(val) => handleInputChange('genre', val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите жанр" />
@@ -204,7 +526,7 @@ const Index = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-base">Название книги *</Label>
+                  <Label htmlFor="title">Название книги *</Label>
                   <Input 
                     id="title"
                     value={currentBook.title}
@@ -214,7 +536,7 @@ const Index = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-base">Описание сюжета</Label>
+                  <Label htmlFor="description">Описание сюжета</Label>
                   <Textarea
                     id="description"
                     value={currentBook.description}
@@ -225,7 +547,7 @@ const Index = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="idea" className="text-base">Главная идея</Label>
+                  <Label htmlFor="idea">Главная идея</Label>
                   <Textarea
                     id="idea"
                     value={currentBook.idea}
@@ -235,43 +557,8 @@ const Index = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="mainCharacters" className="text-base">Главные герои</Label>
-                    <Textarea
-                      id="mainCharacters"
-                      value={currentBook.mainCharacters}
-                      onChange={(e) => handleInputChange('mainCharacters', e.target.value)}
-                      placeholder="Опишите главных персонажей..."
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="secondaryCharacters" className="text-base">Второстепенные персонажи</Label>
-                    <Textarea
-                      id="secondaryCharacters"
-                      value={currentBook.secondaryCharacters}
-                      onChange={(e) => handleInputChange('secondaryCharacters', e.target.value)}
-                      placeholder="Опишите второстепенных персонажей..."
-                      rows={4}
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="villains" className="text-base">Антагонисты / Злодеи</Label>
-                  <Textarea
-                    id="villains"
-                    value={currentBook.villains}
-                    onChange={(e) => handleInputChange('villains', e.target.value)}
-                    placeholder="Опишите противников главного героя..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="turningPoint" className="text-base">Поворотный момент</Label>
+                  <Label htmlFor="turningPoint">Поворотный момент</Label>
                   <Textarea
                     id="turningPoint"
                     value={currentBook.turningPoint}
@@ -282,7 +569,7 @@ const Index = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="uniqueFeatures" className="text-base">Уникальные фишки</Label>
+                  <Label htmlFor="uniqueFeatures">Уникальные фишки</Label>
                   <Textarea
                     id="uniqueFeatures"
                     value={currentBook.uniqueFeatures}
@@ -292,10 +579,185 @@ const Index = () => {
                   />
                 </div>
               </>
-            ) : (
+            )}
+
+            {formStep === 'characters' && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Персонажи ({currentBook.characters.length})</h3>
+                    <p className="text-sm text-muted-foreground">Создайте детальные анкеты для всех персонажей</p>
+                  </div>
+                  <Button onClick={() => setIsCharacterDialogOpen(true)} className="gap-2">
+                    <Icon name="Plus" size={18} />
+                    Добавить
+                  </Button>
+                </div>
+
+                {currentBook.characters.length === 0 ? (
+                  <Card className="p-8 text-center border-dashed">
+                    <Icon name="Users" size={48} className="mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-muted-foreground mb-4">Пока нет персонажей</p>
+                    <Button onClick={() => setIsCharacterDialogOpen(true)} variant="outline" className="gap-2">
+                      <Icon name="Plus" size={16} />
+                      Создать первого персонажа
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {currentBook.characters.map(char => (
+                      <Card key={char.id} className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold text-lg">{char.name}</h4>
+                              <Badge variant={
+                                char.role === 'main' ? 'default' : 
+                                char.role === 'villain' ? 'destructive' : 'secondary'
+                              }>
+                                {char.role === 'main' ? 'Главный' : 
+                                 char.role === 'villain' ? 'Злодей' : 'Второстепенный'}
+                              </Badge>
+                            </div>
+                            {char.age && <p className="text-sm text-muted-foreground mb-1">Возраст: {char.age}</p>}
+                            {char.personality && (
+                              <p className="text-sm line-clamp-2">{char.personality}</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2 ml-4">
+                            <Button size="sm" variant="ghost" onClick={() => editCharacter(char)}>
+                              <Icon name="Edit" size={16} />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => deleteCharacter(char.id)}>
+                              <Icon name="Trash2" size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+                {renderCharacterDialog()}
+              </>
+            )}
+
+            {formStep === 'illustrations' && (
+              <>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Количество иллюстраций: {currentBook.illustrations.count}</Label>
+                    <Slider 
+                      value={[currentBook.illustrations.count]}
+                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, count: val[0] })}
+                      min={1}
+                      max={10}
+                      step={1}
+                    />
+                    <p className="text-xs text-muted-foreground">От 1 до 10 иллюстраций</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Стиль иллюстраций</Label>
+                    <Select 
+                      value={currentBook.illustrations.style} 
+                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, style: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="realistic">Реалистичный</SelectItem>
+                        <SelectItem value="watercolor">Акварель</SelectItem>
+                        <SelectItem value="oil-painting">Масляная живопись</SelectItem>
+                        <SelectItem value="digital-art">Цифровое искусство</SelectItem>
+                        <SelectItem value="sketch">Скетч/Набросок</SelectItem>
+                        <SelectItem value="anime">Аниме</SelectItem>
+                        <SelectItem value="comic">Комикс</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Цветовая палитра</Label>
+                    <Select 
+                      value={currentBook.illustrations.colorScheme} 
+                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, colorScheme: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="warm">Тёплые тона</SelectItem>
+                        <SelectItem value="cold">Холодные тона</SelectItem>
+                        <SelectItem value="vibrant">Яркие цвета</SelectItem>
+                        <SelectItem value="pastel">Пастельные</SelectItem>
+                        <SelectItem value="monochrome">Монохром</SelectItem>
+                        <SelectItem value="dark">Тёмные тона</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Настроение</Label>
+                    <Select 
+                      value={currentBook.illustrations.mood} 
+                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, mood: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dramatic">Драматичное</SelectItem>
+                        <SelectItem value="peaceful">Умиротворённое</SelectItem>
+                        <SelectItem value="mysterious">Таинственное</SelectItem>
+                        <SelectItem value="epic">Эпичное</SelectItem>
+                        <SelectItem value="romantic">Романтичное</SelectItem>
+                        <SelectItem value="dark">Мрачное</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="bg-muted/50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">Предпросмотр настроек:</h4>
+                    <p className="text-sm">
+                      Будет создано <strong>{currentBook.illustrations.count}</strong> иллюстраций 
+                      в стиле <strong>{currentBook.illustrations.style}</strong> с{' '}
+                      <strong>{currentBook.illustrations.colorScheme}</strong> палитрой и{' '}
+                      <strong>{currentBook.illustrations.mood}</strong> настроением
+                    </p>
+                  </div>
+
+                  <Button 
+                    onClick={generateIllustrations} 
+                    disabled={isGeneratingImages}
+                    className="w-full gap-2"
+                    size="lg"
+                  >
+                    <Icon name={isGeneratingImages ? "Loader2" : "Sparkles"} size={20} className={isGeneratingImages ? "animate-spin" : ""} />
+                    {isGeneratingImages ? 'Генерирую иллюстрации...' : 'Сгенерировать иллюстрации сейчас'}
+                  </Button>
+
+                  {currentBook.generatedImages.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-semibold">Сгенерированные иллюстрации:</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        {currentBook.generatedImages.map((url, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border">
+                            <img src={url} alt={`Illustration ${idx + 1}`} className="w-full h-full object-cover" />
+                            <Badge className="absolute top-2 right-2">#{idx + 1}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {formStep === 'settings' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="pages" className="text-base">Объём книги (страниц)</Label>
+                  <Label htmlFor="pages">Объём книги (страниц)</Label>
                   <Select value={currentBook.pages} onValueChange={(val) => handleInputChange('pages', val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите примерный объём" />
@@ -310,7 +772,7 @@ const Index = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="writingStyle" className="text-base">Стиль повествования</Label>
+                  <Label htmlFor="writingStyle">Стиль повествования</Label>
                   <Select value={currentBook.writingStyle} onValueChange={(val) => handleInputChange('writingStyle', val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите стиль" />
@@ -326,7 +788,7 @@ const Index = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="textTone" className="text-base">Тон текста</Label>
+                  <Label htmlFor="textTone">Тон текста</Label>
                   <Select value={currentBook.textTone} onValueChange={(val) => handleInputChange('textTone', val)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Выберите тон" />
@@ -343,10 +805,12 @@ const Index = () => {
                 </div>
 
                 <div className="bg-muted/50 p-4 rounded-lg">
-                  <h4 className="font-semibold mb-2 text-lg">Предпросмотр параметров книги:</h4>
+                  <h4 className="font-semibold mb-2 text-lg">Итоговые параметры книги:</h4>
                   <div className="space-y-1 text-sm">
-                    <p><strong>Название:</strong> {currentBook.title || 'Не указано'}</p>
-                    <p><strong>Жанр:</strong> {currentBook.genre || 'Не указан'}</p>
+                    <p><strong>Название:</strong> {currentBook.title}</p>
+                    <p><strong>Жанр:</strong> {currentBook.genre}</p>
+                    <p><strong>Персонажей:</strong> {currentBook.characters.length}</p>
+                    <p><strong>Иллюстраций:</strong> {currentBook.generatedImages.length}</p>
                     <p><strong>Объём:</strong> {currentBook.pages || 'Не указан'}</p>
                     <p><strong>Стиль:</strong> {currentBook.writingStyle || 'Не указан'}</p>
                     <p><strong>Тон:</strong> {currentBook.textTone || 'Не указан'}</p>
@@ -356,22 +820,31 @@ const Index = () => {
             )}
 
             <div className="flex gap-4 pt-4">
-              {formStep === 'settings' && (
-                <Button variant="outline" onClick={() => setFormStep('basic')} className="gap-2">
+              {formStep !== 'basic' && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    const steps: Array<'basic' | 'characters' | 'illustrations' | 'settings'> = 
+                      ['basic', 'characters', 'illustrations', 'settings'];
+                    const currentIdx = steps.indexOf(formStep);
+                    if (currentIdx > 0) setFormStep(steps[currentIdx - 1]);
+                  }}
+                  className="gap-2"
+                >
                   <Icon name="ArrowLeft" size={18} />
                   Назад
                 </Button>
               )}
               <Button onClick={handleNextStep} className="flex-1 gap-2">
-                {formStep === 'basic' ? (
+                {formStep === 'settings' ? (
                   <>
-                    Далее
-                    <Icon name="ArrowRight" size={18} />
+                    <Icon name="Check" size={18} />
+                    Создать книгу
                   </>
                 ) : (
                   <>
-                    <Icon name="Sparkles" size={18} />
-                    Создать книгу
+                    Далее
+                    <Icon name="ArrowRight" size={18} />
                   </>
                 )}
               </Button>
@@ -405,24 +878,38 @@ const Index = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {books.map(book => (
-              <Card key={book.id} className="hover:shadow-lg transition-all animate-scale-in">
+              <Card key={book.id} className="hover:shadow-lg transition-all animate-scale-in overflow-hidden">
+                {book.generatedImages.length > 0 && (
+                  <div className="aspect-video w-full overflow-hidden">
+                    <img 
+                      src={book.generatedImages[0]} 
+                      alt={book.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <div className="flex items-start justify-between mb-2">
                     <Badge variant="secondary">{book.genre}</Badge>
-                    <Icon name="MoreVertical" size={18} className="text-muted-foreground" />
+                    <Badge variant="outline">{book.characters.length} персонажей</Badge>
                   </div>
                   <CardTitle className="text-xl line-clamp-2">{book.title}</CardTitle>
-                  <CardDescription className="line-clamp-3">{book.description}</CardDescription>
+                  <CardDescription className="line-clamp-2">{book.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    <Button variant="default" size="sm" className="flex-1 gap-2">
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="flex-1 gap-2"
+                      onClick={() => downloadBook(book)}
+                    >
                       <Icon name="Download" size={16} />
                       Скачать
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1 gap-2">
-                      <Icon name="Edit" size={16} />
-                      Редактор
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Icon name="Eye" size={16} />
+                      Просмотр
                     </Button>
                   </div>
                 </CardContent>
@@ -449,20 +936,20 @@ const Index = () => {
           <TabsContent value="faq" className="space-y-4">
             {[
               {
-                q: 'Как создать книгу?',
-                a: 'Перейдите в раздел "Создать книгу", заполните анкету с информацией о сюжете и персонажах, затем настройте стиль и формат книги.'
+                q: 'Как создать персонажа?',
+                a: 'На шаге "Персонажи" нажмите "Добавить" и заполните детальную анкету с внешностью, характером и предысторией.'
               },
               {
-                q: 'Можно ли редактировать книгу после создания?',
-                a: 'Да, все созданные книги доступны для скачивания и редактирования в любом текстовом редакторе.'
+                q: 'Сколько иллюстраций можно создать?',
+                a: 'От 1 до 10 иллюстраций на книгу. Выберите стиль, цвета и настроение — ИИ создаст уникальные изображения.'
               },
               {
-                q: 'Какой объём книги лучше выбрать?',
-                a: 'Для начала рекомендуем выбрать 100-200 страниц. Это оптимальный размер для первого опыта.'
+                q: 'В каком формате скачивается книга?',
+                a: 'Книга скачивается в текстовом формате (.txt) со всей информацией и ссылками на иллюстрации.'
               },
               {
-                q: 'Как выбрать подходящий стиль?',
-                a: 'Для фэнтези и фантастики подходит литературный или поэтичный стиль. Для детективов — публицистический.'
+                q: 'Можно ли редактировать персонажей?',
+                a: 'Да, в списке персонажей нажмите на иконку редактирования для изменения любых данных.'
               }
             ].map((item, idx) => (
               <Card key={idx}>
@@ -477,19 +964,19 @@ const Index = () => {
           <TabsContent value="tips" className="space-y-4">
             {[
               {
-                icon: 'Lightbulb',
-                title: 'Подробно опишите персонажей',
-                desc: 'Чем больше деталей вы укажете о характере, внешности и мотивации героев, тем живее получится история.'
+                icon: 'UserPlus',
+                title: 'Создавайте детальных персонажей',
+                desc: 'Чем подробнее анкета персонажа, тем живее получится история. Укажите не только внешность, но и мотивацию.'
               },
               {
-                icon: 'Target',
-                title: 'Определите конфликт',
-                desc: 'Ясно сформулируйте главную проблему или цель героя — это основа любой захватывающей истории.'
+                icon: 'Palette',
+                title: 'Подбирайте стиль иллюстраций под жанр',
+                desc: 'Для фэнтези подойдёт масляная живопись, для детектива — мрачные тона, для романа — акварель.'
               },
               {
-                icon: 'Zap',
-                title: 'Не бойтесь поворотов',
-                desc: 'Неожиданные повороты сюжета делают книгу запоминающейся. Опишите их в соответствующем поле.'
+                icon: 'BookOpen',
+                title: 'Начните с малого объёма',
+                desc: 'Для первой книги выберите 50-100 страниц, чтобы быстрее увидеть результат и понять структуру.'
               }
             ].map((tip, idx) => (
               <Card key={idx} className="flex items-start gap-4 p-4">
@@ -507,14 +994,15 @@ const Index = () => {
           <TabsContent value="examples" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Пример анкеты для фэнтези романа</CardTitle>
+                <CardTitle>Пример персонажа для фэнтези</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p><strong>Жанр:</strong> Фэнтези</p>
-                <p><strong>Название:</strong> "Хранители Забытого Королевства"</p>
-                <p><strong>Сюжет:</strong> Молодая девушка обнаруживает, что она — последняя наследница древней магической династии...</p>
-                <p><strong>Главный герой:</strong> Элара, 18 лет, смелая и упрямая, воспитана в деревне, не знает о своём происхождении...</p>
-                <p><strong>Поворотный момент:</strong> Элара узнаёт, что её лучший друг — шпион короля-узурпатора...</p>
+              <CardContent className="space-y-2">
+                <p><strong>Имя:</strong> Элара Светлокрылая</p>
+                <p><strong>Возраст:</strong> 18 лет</p>
+                <p><strong>Внешность:</strong> Длинные серебристые волосы, изумрудные глаза, хрупкого телосложения</p>
+                <p><strong>Характер:</strong> Смелая, но импульсивная. Верит в справедливость и готова рисковать ради других</p>
+                <p><strong>Предыстория:</strong> Воспитана в деревне магов, не знала о своём королевском происхождении</p>
+                <p><strong>Мотивация:</strong> Вернуть трон и освободить королевство от тирании тёмного мага</p>
               </CardContent>
             </Card>
           </TabsContent>
