@@ -1,7 +1,7 @@
 import json
 import os
-import requests
-from typing import Dict, Any, List
+from typing import Dict, Any
+from gigachat import GigaChat
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -60,31 +60,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'GigaChat API key not configured'})
             }
         
-        auth_response = requests.post(
-            'https://ngw.devices.sberbank.ru:9443/api/v2/oauth',
-            headers={'Authorization': f'Bearer {api_key}', 'RqUID': context.request_id},
-            verify=False
-        )
-        
-        if auth_response.status_code != 200:
-            return {
-                'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({'error': 'GigaChat authorization failed'})
-            }
-        
-        access_token = auth_response.json()['access_token']
-        
-        characters_text = '\n'.join([
-            f"- {char['name']} ({char['role']}): {char.get('personality', '')} | Мотивация: {char.get('motivation', '')}"
-            for char in characters
-        ])
-        
-        prompt = f"""Ты профессиональный писатель. Напиши полноценную книгу со следующими параметрами:
+        with GigaChat(credentials=api_key, verify_ssl_certs=False) as giga:
+            characters_text = '\n'.join([
+                f"- {char['name']} ({char['role']}): {char.get('personality', '')} | Мотивация: {char.get('motivation', '')}"
+                for char in characters
+            ])
+            
+            prompt = f"""Ты профессиональный писатель. Напиши полноценную книгу со следующими параметрами:
 
 НАЗВАНИЕ: {title}
 ЖАНР: {genre}
@@ -120,36 +102,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
 И так далее."""
 
-        response = requests.post(
-            'https://gigachat.devices.sberbank.ru/api/v1/chat/completions',
-            headers={
-                'Authorization': f'Bearer {access_token}',
-                'Content-Type': 'application/json'
-            },
-            json={
-                'model': 'GigaChat',
-                'messages': [
-                    {'role': 'system', 'content': 'Ты талантливый писатель, создающий захватывающие книги на русском языке.'},
-                    {'role': 'user', 'content': prompt}
-                ],
-                'max_tokens': 8000,
-                'temperature': 0.9
-            },
-            verify=False
-        )
-        
-        if response.status_code != 200:
-            return {
-                'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({'error': f'GigaChat request failed: {response.text}'})
-            }
-        
-        book_text = response.json()['choices'][0]['message']['content']
+            response = giga.chat(prompt)
+            book_text = response.choices[0].message.content
         
         chapters = []
         current_chapter = None
