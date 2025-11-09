@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Test book generation endpoint",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "title": "Тестовая книга",
+        "genre": "fantasy",
+        "description": "История о магии",
+        "idea": "Добро побеждает зло",
+        "characters": [
+          {
+            "name": "Герой",
+            "role": "main",
+            "personality": "Смелый",
+            "motivation": "Спасти мир"
+          }
+        ],
+        "turningPoint": "Битва",
+        "uniqueFeatures": "Магия",
+        "pages": "100-200",
+        "writingStyle": "literary",
+        "textTone": "dramatic"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "chapters": "array",
+        "total_chapters": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

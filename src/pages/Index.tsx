@@ -30,6 +30,11 @@ type IllustrationSettings = {
   mood: string;
 };
 
+type Chapter = {
+  title: string;
+  text: string;
+};
+
 type BookData = {
   genre: string;
   title: string;
@@ -43,6 +48,7 @@ type BookData = {
   textTone: string;
   illustrations: IllustrationSettings;
   generatedImages: string[];
+  chapters?: Chapter[];
 };
 
 const Index = () => {
@@ -52,6 +58,7 @@ const Index = () => {
   const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  const [isGeneratingBook, setIsGeneratingBook] = useState(false);
   
   const [currentCharacter, setCurrentCharacter] = useState<Omit<Character, 'id'>>({
     name: '',
@@ -162,15 +169,19 @@ const Index = () => {
       try {
         const prompt = `Book illustration for "${currentBook.title}", ${currentBook.genre} genre, ${currentBook.illustrations.style} art style, ${currentBook.illustrations.colorScheme} color palette, ${currentBook.illustrations.mood} mood, scene ${i + 1} of ${currentBook.illustrations.count}, professional book cover quality`;
         
-        const response = await fetch('https://poehali.dev/.api/images/generate', {
+        const response = await fetch('https://poehali.dev/.api/generate-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt })
         });
         
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
-        if (data.url) {
-          images.push(data.url);
+        if (data.image_url) {
+          images.push(data.image_url);
           toast.success(`Иллюстрация ${i + 1}/${currentBook.illustrations.count} готова`);
         }
       } catch (error) {
@@ -181,7 +192,47 @@ const Index = () => {
     
     setCurrentBook(prev => ({ ...prev, generatedImages: images }));
     setIsGeneratingImages(false);
-    toast.success('Все иллюстрации созданы!');
+    if (images.length > 0) {
+      toast.success(`Создано ${images.length} иллюстраций!`);
+    }
+  };
+
+  const generateBookText = async () => {
+    setIsGeneratingBook(true);
+    toast.info('Генерирую текст книги... Это может занять 1-2 минуты');
+    
+    try {
+      const response = await fetch('https://functions.poehali.dev/2f50210e-c8d5-4275-968b-16b64e5f5d39', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: currentBook.title,
+          genre: currentBook.genre,
+          description: currentBook.description,
+          idea: currentBook.idea,
+          characters: currentBook.characters,
+          turningPoint: currentBook.turningPoint,
+          uniqueFeatures: currentBook.uniqueFeatures,
+          pages: currentBook.pages,
+          writingStyle: currentBook.writingStyle,
+          textTone: currentBook.textTone
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка генерации');
+      }
+      
+      const data = await response.json();
+      setCurrentBook(prev => ({ ...prev, chapters: data.chapters }));
+      toast.success(`Книга готова! Создано ${data.total_chapters} глав`);
+    } catch (error: any) {
+      console.error('Error generating book:', error);
+      toast.error(`Ошибка: ${error.message}`);
+    } finally {
+      setIsGeneratingBook(false);
+    }
   };
 
   const handleNextStep = () => {
@@ -232,22 +283,34 @@ const Index = () => {
     content += `Жанр: ${book.genre}\n`;
     content += `Стиль: ${book.writingStyle}\n`;
     content += `Тон: ${book.textTone}\n\n`;
-    content += `${book.description}\n\n`;
-    content += `ГЛАВНАЯ ИДЕЯ\n${book.idea}\n\n`;
-    content += `ПЕРСОНАЖИ\n`;
-    book.characters.forEach(char => {
-      content += `\n${char.name} (${char.role})\n`;
-      content += `Возраст: ${char.age}\n`;
-      content += `Внешность: ${char.appearance}\n`;
-      content += `Характер: ${char.personality}\n`;
-      content += `Предыстория: ${char.background}\n`;
-      content += `Мотивация: ${char.motivation}\n`;
-    });
-    content += `\n\nПОВОРОТНЫЙ МОМЕНТ\n${book.turningPoint}\n\n`;
-    content += `УНИКАЛЬНЫЕ ФИШКИ\n${book.uniqueFeatures}\n\n`;
+    
+    if (book.chapters && book.chapters.length > 0) {
+      content += `\n\n`;
+      book.chapters.forEach((chapter, idx) => {
+        content += `\n\n═══════════════════════════════════════\n`;
+        content += `ГЛАВА ${idx + 1}: ${chapter.title}\n`;
+        content += `═══════════════════════════════════════\n\n`;
+        content += chapter.text;
+        content += `\n\n`;
+      });
+    } else {
+      content += `${book.description}\n\n`;
+      content += `ГЛАВНАЯ ИДЕЯ\n${book.idea}\n\n`;
+      content += `ПЕРСОНАЖИ\n`;
+      book.characters.forEach(char => {
+        content += `\n${char.name} (${char.role})\n`;
+        content += `Возраст: ${char.age}\n`;
+        content += `Внешность: ${char.appearance}\n`;
+        content += `Характер: ${char.personality}\n`;
+        content += `Предыстория: ${char.background}\n`;
+        content += `Мотивация: ${char.motivation}\n`;
+      });
+      content += `\n\nПОВОРОТНЫЙ МОМЕНТ\n${book.turningPoint}\n\n`;
+      content += `УНИКАЛЬНЫЕ ФИШКИ\n${book.uniqueFeatures}\n\n`;
+    }
     
     if (book.generatedImages.length > 0) {
-      content += `\nИЛЛЮСТРАЦИИ:\n`;
+      content += `\n\nИЛЛЮСТРАЦИИ:\n`;
       book.generatedImages.forEach((url, idx) => {
         content += `${idx + 1}. ${url}\n`;
       });
@@ -816,6 +879,27 @@ const Index = () => {
                     <p><strong>Тон:</strong> {currentBook.textTone || 'Не указан'}</p>
                   </div>
                 </div>
+
+                <Button 
+                  onClick={generateBookText} 
+                  disabled={isGeneratingBook}
+                  className="w-full gap-2"
+                  size="lg"
+                  variant="default"
+                >
+                  <Icon name={isGeneratingBook ? "Loader2" : "BookOpen"} size={20} className={isGeneratingBook ? "animate-spin" : ""} />
+                  {isGeneratingBook ? 'Генерирую книгу...' : 'Сгенерировать текст книги'}
+                </Button>
+
+                {currentBook.chapters && currentBook.chapters.length > 0 && (
+                  <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon name="Check" size={20} className="text-green-500" />
+                      <h4 className="font-semibold text-green-500">Книга сгенерирована!</h4>
+                    </div>
+                    <p className="text-sm">Создано {currentBook.chapters.length} глав. Нажмите "Создать книгу" чтобы сохранить её.</p>
+                  </div>
+                )}
               </>
             )}
 
@@ -889,12 +973,17 @@ const Index = () => {
                   </div>
                 )}
                 <CardHeader>
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-2 gap-2 flex-wrap">
                     <Badge variant="secondary">{book.genre}</Badge>
                     <Badge variant="outline">{book.characters.length} персонажей</Badge>
+                    {book.chapters && book.chapters.length > 0 && (
+                      <Badge variant="default" className="bg-green-500">{book.chapters.length} глав</Badge>
+                    )}
                   </div>
                   <CardTitle className="text-xl line-clamp-2">{book.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">{book.description}</CardDescription>
+                  <CardDescription className="line-clamp-2">
+                    {book.chapters && book.chapters.length > 0 ? `Полная книга с ${book.chapters.length} главами` : book.description}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
