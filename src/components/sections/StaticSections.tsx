@@ -208,7 +208,7 @@ export const WritersSection = () => {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h2 className="text-4xl font-bold mb-8 text-center text-black">
           Великие писатели мира
         </h2>
         
@@ -217,7 +217,7 @@ export const WritersSection = () => {
             <Card key={writer.id} className="bg-white/80 backdrop-blur hover:shadow-xl transition-shadow">
               <CardHeader>
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center text-white text-2xl font-bold">
                     {writer.nameRu.charAt(0)}
                   </div>
                   <div className="flex-1">
@@ -237,13 +237,13 @@ export const WritersSection = () => {
                     <ul className="text-sm text-gray-600 space-y-1">
                       {(writer.famousWorks || []).map((work, idx) => (
                         <li key={idx} className="flex items-start">
-                          <span className="text-purple-500 mr-2">•</span>
+                          <span className="text-black mr-2">•</span>
                           {work}
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <p className="text-sm text-gray-700 italic border-l-2 border-purple-300 pl-3">
+                  <p className="text-sm text-gray-700 italic border-l-2 border-black pl-3">
                     {writer.bio}
                   </p>
                 </div>
@@ -260,7 +260,7 @@ export const HelpSection = () => {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h2 className="text-4xl font-bold mb-8 text-center text-black">
           Помощь и FAQ
         </h2>
 
@@ -270,7 +270,7 @@ export const HelpSection = () => {
               <AccordionItem value="item-1">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2">
-                    <Icon name="BookOpen" className="w-5 h-5 text-purple-600" />
+                    <Icon name="BookOpen" className="w-5 h-5 text-black" />
                     <span>Как создать книгу?</span>
                   </div>
                 </AccordionTrigger>
@@ -290,7 +290,7 @@ export const HelpSection = () => {
               <AccordionItem value="item-2">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2">
-                    <Icon name="User" className="w-5 h-5 text-purple-600" />
+                    <Icon name="User" className="w-5 h-5 text-black" />
                     <span>Как войти в аккаунт?</span>
                   </div>
                 </AccordionTrigger>
@@ -311,7 +311,7 @@ export const HelpSection = () => {
               <AccordionItem value="item-3">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2">
-                    <Icon name="Image" className="w-5 h-5 text-purple-600" />
+                    <Icon name="Image" className="w-5 h-5 text-black" />
                     <span>Проблемы с генерацией?</span>
                   </div>
                 </AccordionTrigger>
@@ -332,7 +332,7 @@ export const HelpSection = () => {
               <AccordionItem value="item-4">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2">
-                    <Icon name="Edit" className="w-5 h-5 text-purple-600" />
+                    <Icon name="Edit" className="w-5 h-5 text-black" />
                     <span>Как редактировать книгу?</span>
                   </div>
                 </AccordionTrigger>
@@ -351,7 +351,7 @@ export const HelpSection = () => {
               <AccordionItem value="item-5">
                 <AccordionTrigger>
                   <div className="flex items-center gap-2">
-                    <Icon name="Settings" className="w-5 h-5 text-purple-600" />
+                    <Icon name="Settings" className="w-5 h-5 text-black" />
                     <span>Технические проблемы</span>
                   </div>
                 </AccordionTrigger>
@@ -384,11 +384,11 @@ export const HelpSection = () => {
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-gray-700">
-                <Icon name="Mail" className="w-5 h-5 text-purple-600" />
+                <Icon name="Mail" className="w-5 h-5 text-black" />
                 <span>support@bookgen.ai</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
-                <Icon name="MessageCircle" className="w-5 h-5 text-purple-600" />
+                <Icon name="MessageCircle" className="w-5 h-5 text-black" />
                 <span>Онлайн-чат (доступен 24/7)</span>
               </div>
             </div>

@@ -60,15 +60,15 @@ const InteractiveAvatar = () => {
 
   return (
     <Card 
-      className="fixed bottom-6 right-6 p-4 max-w-md shadow-xl bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 cursor-pointer hover:shadow-2xl transition-all duration-300 z-50"
+      className="fixed bottom-6 right-6 p-4 max-w-md shadow-xl bg-white border-gray-200 cursor-pointer hover:shadow-2xl transition-all duration-300 z-50"
       onClick={showRandomMessage}
     >
       <div className="flex gap-3 items-start">
-        <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 ${isAnimating ? 'animate-bounce' : ''}`}>
+        <div className={`w-12 h-12 rounded-full bg-black flex items-center justify-center flex-shrink-0 ${isAnimating ? 'animate-bounce' : ''}`}>
           <Icon name={messageType === 'fact' ? 'Lightbulb' : 'Sparkles'} className="text-white" size={24} />
         </div>
         <div className="flex-1">
-          <div className="text-xs font-semibold text-purple-600 mb-1">
+          <div className="text-xs font-semibold text-black mb-1">
             {messageType === 'fact' ? '📚 Литературный факт' : '✨ Вдохновение'}
           </div>
           <p className={`text-sm text-gray-700 leading-relaxed transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
