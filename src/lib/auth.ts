@@ -90,7 +90,7 @@ export const booksApi = {
     return response.json();
   },
 
-  async updateBook(bookId: string, bookData: any): Promise<{ book_id: number; message: string }> {
+  async updateBook(bookId: number, bookData: any): Promise<{ book_id: number; message: string }> {
     const token = auth.getToken();
     if (!token) throw new Error('Требуется авторизация');
 
@@ -133,5 +133,26 @@ export const booksApi = {
 
     const data = await response.json();
     return data.books;
+  },
+
+  async deleteBook(bookId: number): Promise<{ message: string }> {
+    const token = auth.getToken();
+    if (!token) throw new Error('Требуется авторизация');
+
+    const response = await fetch(BOOKS_API, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Auth-Token': token
+      },
+      body: JSON.stringify({ id: bookId })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Ошибка удаления книги');
+    }
+
+    return response.json();
   }
 };
