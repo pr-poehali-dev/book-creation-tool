@@ -440,7 +440,7 @@ const Index = () => {
   return (
     <div>
       {activeSection === 'home' && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-white">
           <Navigation
             activeSection={activeSection}
             user={user}
@@ -453,7 +453,7 @@ const Index = () => {
       )}
 
       {activeSection === 'form' && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-white">
           <Navigation
             activeSection={activeSection}
             user={user}
@@ -489,7 +489,7 @@ const Index = () => {
       )}
 
       {activeSection === 'library' && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-white">
           <Navigation
             activeSection={activeSection}
             user={user}
@@ -507,7 +507,7 @@ const Index = () => {
       )}
 
       {activeSection === 'help' && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-white">
           <Navigation
             activeSection={activeSection}
             user={user}
@@ -520,7 +520,7 @@ const Index = () => {
       )}
 
       {activeSection === 'auth' && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-white">
           <Navigation
             activeSection={activeSection}
             user={user}
@@ -539,7 +539,7 @@ const Index = () => {
       )}
 
       {activeSection === 'writers' && (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="min-h-screen bg-white">
           <Navigation
             activeSection={activeSection}
             user={user}

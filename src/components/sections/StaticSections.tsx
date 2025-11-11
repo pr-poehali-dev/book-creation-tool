@@ -275,7 +275,7 @@ export const HelpSection = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-2 text-gray-700">
+                  <div className="space-y-2 text-gray-700 text-base">
                     <p>1. Войдите в свой аккаунт или зарегистрируйтесь</p>
                     <p>2. Нажмите кнопку "Создать" в навигационном меню</p>
                     <p>3. Заполните основную информацию: название, жанр, описание и идею книги</p>
@@ -295,7 +295,7 @@ export const HelpSection = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-2 text-gray-700">
+                  <div className="space-y-2 text-gray-700 text-base">
                     <p>Для входа в аккаунт:</p>
                     <p>1. Нажмите кнопку "Войти" в правом верхнем углу</p>
                     <p>2. Введите свой email и пароль</p>
@@ -316,7 +316,7 @@ export const HelpSection = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-2 text-gray-700">
+                  <div className="space-y-2 text-gray-700 text-base">
                     <p><strong>Иллюстрации не генерируются:</strong></p>
                     <p>- Убедитесь, что заполнены название и описание книги</p>
                     <p>- Проверьте интернет-соединение</p>
@@ -337,7 +337,7 @@ export const HelpSection = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-2 text-gray-700">
+                  <div className="space-y-2 text-gray-700 text-base">
                     <p>1. Перейдите в раздел "Библиотека"</p>
                     <p>2. Найдите нужную книгу</p>
                     <p>3. Нажмите кнопку "Редактировать"</p>
@@ -356,7 +356,7 @@ export const HelpSection = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <div className="space-y-2 text-gray-700">
+                  <div className="space-y-2 text-gray-700 text-base">
                     <p><strong>Страница не загружается:</strong></p>
                     <p>- Обновите страницу (F5 или Ctrl+R)</p>
                     <p>- Очистите кэш браузера</p>
@@ -379,17 +379,13 @@ export const HelpSection = () => {
             <CardTitle>Нужна дополнительная помощь?</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700 mb-4 text-base">
               Если вы не нашли ответ на свой вопрос, свяжитесь с нами:
             </p>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-gray-700">
+              <div className="flex items-center gap-2 text-gray-700 text-base">
                 <Icon name="Mail" className="w-5 h-5 text-black" />
                 <span>support@bookgen.ai</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Icon name="MessageCircle" className="w-5 h-5 text-black" />
-                <span>Онлайн-чат (доступен 24/7)</span>
               </div>
             </div>
           </CardContent>
