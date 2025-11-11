@@ -33,6 +33,8 @@ export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
         </Button>
       </div>
 
+      <div className="border-t border-gray-200 my-12"></div>
+
       <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
         <Card className="bg-white border-gray-200 hover:shadow-xl transition-all hover:scale-105">
           <CardHeader>
@@ -73,6 +75,8 @@ export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
           </CardHeader>
         </Card>
       </div>
+
+      <div className="border-t border-gray-200 my-12"></div>
 
       <div className="max-w-5xl mx-auto">
         <h3 className="text-3xl font-bold text-black text-center mb-10">Как это работает</h3>
@@ -115,6 +119,8 @@ export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
           </div>
         </div>
       </div>
+
+      <div className="border-t border-gray-200 my-12"></div>
 
       <div className="max-w-4xl mx-auto mt-16 bg-black text-white rounded-2xl p-10 text-center">
         <h3 className="text-3xl font-bold mb-4">Готовы создать свою историю?</h3>
@@ -269,7 +275,7 @@ export const HelpSection = () => {
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="item-1">
                 <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-base">
                     <Icon name="BookOpen" className="w-5 h-5 text-black" />
                     <span>Как создать книгу?</span>
                   </div>
@@ -289,7 +295,7 @@ export const HelpSection = () => {
 
               <AccordionItem value="item-2">
                 <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-base">
                     <Icon name="User" className="w-5 h-5 text-black" />
                     <span>Как войти в аккаунт?</span>
                   </div>
@@ -310,7 +316,7 @@ export const HelpSection = () => {
 
               <AccordionItem value="item-3">
                 <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-base">
                     <Icon name="Image" className="w-5 h-5 text-black" />
                     <span>Проблемы с генерацией?</span>
                   </div>
@@ -331,7 +337,7 @@ export const HelpSection = () => {
 
               <AccordionItem value="item-4">
                 <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-base">
                     <Icon name="Edit" className="w-5 h-5 text-black" />
                     <span>Как редактировать книгу?</span>
                   </div>
@@ -350,7 +356,7 @@ export const HelpSection = () => {
 
               <AccordionItem value="item-5">
                 <AccordionTrigger>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-base">
                     <Icon name="Settings" className="w-5 h-5 text-black" />
                     <span>Технические проблемы</span>
                   </div>
