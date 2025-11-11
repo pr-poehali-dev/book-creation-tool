@@ -123,7 +123,11 @@ export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
       <div className="border-t border-gray-200 my-12"></div>
 
       <div className="max-w-4xl mx-auto mt-16 bg-black text-white rounded-2xl p-10 text-center">
-        <h3 className="text-3xl font-bold mb-4">Готовы создать свою историю?</h3>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Icon name="Sparkles" className="w-6 h-6" />
+          <h3 className="text-3xl font-bold">Готовы создать свою историю?</h3>
+          <Icon name="Sparkles" className="w-6 h-6" />
+        </div>
         <p className="text-lg text-gray-300 mb-8">
           Присоединяйтесь к авторам, которые уже создают уникальные произведения с помощью ИИ
         </p>
