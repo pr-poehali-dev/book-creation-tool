@@ -15,61 +15,120 @@ interface HomeSectionProps {
 export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
   return (
     <div className="container mx-auto px-6 py-12">
-      <div className="max-w-4xl mx-auto text-center mb-12">
-        <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+      <div className="max-w-4xl mx-auto text-center mb-16">
+        <h2 className="text-5xl font-bold mb-6 text-black">
           Создайте свою книгу с помощью ИИ
         </h2>
-        <p className="text-xl text-gray-700 mb-8">
-          Превратите свои идеи в полноценные литературные произведения с иллюстрациями
+        <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+          Превратите свои идеи в полноценные литературные произведения с иллюстрациями. 
+          Искусственный интеллект поможет вам создать уникальную историю от первой строки до последней главы.
         </p>
-        {user && (
-          <Button
-            size="lg"
-            onClick={onNavigateToForm}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-6 text-lg"
-          >
-            <Icon name="Plus" className="w-5 h-5 mr-2" />
-            Начать создание книги
-          </Button>
-        )}
+        <Button
+          size="lg"
+          onClick={onNavigateToForm}
+          className="bg-black hover:bg-gray-800 text-white px-10 py-6 text-lg rounded-full"
+        >
+          <Icon name="Plus" className="w-5 h-5 mr-2" />
+          Начать создание книги
+        </Button>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-        <Card className="bg-white/80 backdrop-blur border-purple-200 hover:shadow-lg transition-shadow">
+      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
+        <Card className="bg-white border-gray-200 hover:shadow-xl transition-all hover:scale-105">
           <CardHeader>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-              <Icon name="BookOpen" className="w-6 h-6 text-purple-600" />
+            <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mb-4">
+              <Icon name="BookOpen" className="w-8 h-8 text-white" />
             </div>
-            <CardTitle>Умная генерация</CardTitle>
-            <CardDescription>
-              ИИ создаст уникальный сюжет, персонажей и диалоги на основе ваших идей
+            <CardTitle className="text-black text-xl">Умная генерация текста</CardTitle>
+            <CardDescription className="text-gray-600 text-base">
+              ИИ создаст уникальный сюжет с проработанными персонажами, диалогами и описаниями. 
+              Выберите жанр, стиль и тон — остальное сделает искусственный интеллект.
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur border-pink-200 hover:shadow-lg transition-shadow">
+        <Card className="bg-white border-gray-200 hover:shadow-xl transition-all hover:scale-105">
           <CardHeader>
-            <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-              <Icon name="Image" className="w-6 h-6 text-pink-600" />
+            <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mb-4">
+              <Icon name="Image" className="w-8 h-8 text-white" />
             </div>
-            <CardTitle>Иллюстрации</CardTitle>
-            <CardDescription>
-              Автоматическая генерация уникальных иллюстраций для вашей книги
+            <CardTitle className="text-black text-xl">Иллюстрации</CardTitle>
+            <CardDescription className="text-gray-600 text-base">
+              Автоматическая генерация профессиональных иллюстраций в выбранном стиле. 
+              До 25 уникальных изображений для вашей книги.
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <Card className="bg-white/80 backdrop-blur border-blue-200 hover:shadow-lg transition-shadow">
+        <Card className="bg-white border-gray-200 hover:shadow-xl transition-all hover:scale-105">
           <CardHeader>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-              <Icon name="Download" className="w-6 h-6 text-blue-600" />
+            <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center mb-4">
+              <Icon name="Settings" className="w-8 h-8 text-white" />
             </div>
-            <CardTitle>Экспорт</CardTitle>
-            <CardDescription>
-              Скачайте готовую книгу в различных форматах: PDF, EPUB, DOCX
+            <CardTitle className="text-black text-xl">Полная настройка</CardTitle>
+            <CardDescription className="text-gray-600 text-base">
+              Выбирайте жанры, стили написания, тона текста, цветовые схемы иллюстраций. 
+              Создавайте персонажей с детальными характеристиками.
             </CardDescription>
           </CardHeader>
         </Card>
+      </div>
+
+      <div className="max-w-5xl mx-auto">
+        <h3 className="text-3xl font-bold text-black text-center mb-10">Как это работает</h3>
+        <div className="grid md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              1
+            </div>
+            <h4 className="font-semibold text-lg text-black mb-2">Опишите идею</h4>
+            <p className="text-gray-600 text-sm">
+              Расскажите о сюжете, жанре и главной идее вашей книги
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              2
+            </div>
+            <h4 className="font-semibold text-lg text-black mb-2">Создайте персонажей</h4>
+            <p className="text-gray-600 text-sm">
+              Добавьте героев с описанием внешности, характера и мотивации
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              3
+            </div>
+            <h4 className="font-semibold text-lg text-black mb-2">Настройте стиль</h4>
+            <p className="text-gray-600 text-sm">
+              Выберите стиль написания, тон текста и параметры иллюстраций
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              4
+            </div>
+            <h4 className="font-semibold text-lg text-black mb-2">Получите книгу</h4>
+            <p className="text-gray-600 text-sm">
+              ИИ сгенерирует полный текст и иллюстрации за несколько минут
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto mt-16 bg-black text-white rounded-2xl p-10 text-center">
+        <h3 className="text-3xl font-bold mb-4">Готовы создать свою историю?</h3>
+        <p className="text-lg text-gray-300 mb-8">
+          Присоединяйтесь к авторам, которые уже создают уникальные произведения с помощью ИИ
+        </p>
+        <Button
+          size="lg"
+          onClick={onNavigateToForm}
+          className="bg-white hover:bg-gray-100 text-black px-10 py-6 text-lg rounded-full"
+        >
+          <Icon name="Sparkles" className="w-5 h-5 mr-2" />
+          Начать сейчас
+        </Button>
       </div>
     </div>
   );
