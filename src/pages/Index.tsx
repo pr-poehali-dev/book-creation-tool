@@ -12,6 +12,7 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Icon from '@/components/ui/icon';
+import InteractiveAvatar from '@/components/InteractiveAvatar';
 import { toast } from 'sonner';
 import { auth, booksApi, User } from '@/lib/auth';
 import { worldWriters } from '@/data/writers';
@@ -349,7 +350,7 @@ const Index = () => {
         Mood: ${currentBook.illustrations.mood}. 
         High quality, professional book cover art.`;
 
-        const response = await fetch('/api/generate-image', {
+        const response = await fetch('https://functions.poehali.dev/8342cb64-c8b1-46f4-8730-6216bd5465fd', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt })
@@ -467,7 +468,7 @@ const Index = () => {
     <nav className="bg-white/80 backdrop-blur-md shadow-md sticky top-0 z-50 border-b border-purple-100">
       <div className="container mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-serif font-bold text-black tracking-wide">Генератор Книг</h1>
+          <h1 className="text-3xl font-serif font-bold text-black tracking-wide">Литературная мастерская</h1>
           <div className="flex gap-2">
             <Button
               variant={activeSection === 'home' ? 'default' : 'ghost'}
@@ -572,7 +573,7 @@ const Index = () => {
           <p className="text-xl text-gray-700 mb-8">
             Превратите свои идеи в полноценные литературные произведения с иллюстрациями
           </p>
-          {user ? (
+          {user && (
             <Button
               size="lg"
               onClick={() => setActiveSection('form')}
@@ -580,15 +581,6 @@ const Index = () => {
             >
               <Icon name="Plus" className="w-5 h-5 mr-2" />
               Начать создание книги
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              onClick={() => setActiveSection('auth')}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-6 text-lg"
-            >
-              <Icon name="LogIn" className="w-5 h-5 mr-2" />
-              Войти или зарегистрироваться
             </Button>
           )}
         </div>
@@ -1506,6 +1498,7 @@ const Index = () => {
       {activeSection === 'help' && renderHelp()}
       {activeSection === 'auth' && renderAuthSection()}
       {activeSection === 'writers' && renderWritersSection()}
+      <InteractiveAvatar />
     </div>
   );
 };

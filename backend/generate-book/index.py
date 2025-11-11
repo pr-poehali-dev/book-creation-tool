@@ -1,11 +1,67 @@
 import json
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from gigachat import GigaChat
+
+def generate_with_gigachat(prompt: str, api_key: str) -> str:
+    '''Generate text using GigaChat API'''
+    with GigaChat(credentials=api_key, scope='GIGACHAT_API_PERS', verify_ssl_certs=False) as giga:
+        response = giga.chat(prompt)
+        return response.choices[0].message.content
+
+def generate_with_openai(prompt: str, api_key: str) -> str:
+    '''Generate text using OpenAI API as fallback'''
+    import requests
+    
+    response = requests.post(
+        'https://api.openai.com/v1/chat/completions',
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        },
+        json={
+            'model': 'gpt-4',
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': 0.8,
+            'max_tokens': 4000
+        },
+        timeout=60
+    )
+    
+    if response.status_code != 200:
+        raise Exception(f'OpenAI API error: {response.text}')
+    
+    return response.json()['choices'][0]['message']['content']
+
+def parse_chapters(book_text: str) -> List[Dict[str, str]]:
+    '''Parse book text into chapters'''
+    chapters = []
+    current_chapter = None
+    current_text = []
+    
+    for line in book_text.split('\n'):
+        if line.strip().startswith('#'):
+            if current_chapter:
+                chapters.append({
+                    'title': current_chapter,
+                    'text': '\n'.join(current_text).strip()
+                })
+            current_chapter = line.strip('#').strip()
+            current_text = []
+        else:
+            current_text.append(line)
+    
+    if current_chapter:
+        chapters.append({
+            'title': current_chapter,
+            'text': '\n'.join(current_text).strip()
+        })
+    
+    return chapters
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Generate full book text using GigaChat from Sber based on book data
+    Business: Generate full book text using AI with automatic fallback
     Args: event with httpMethod, body containing book data; context with request_id
     Returns: HTTP response with generated book chapters
     '''
@@ -64,25 +120,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         else:
             text_tone = tone_data
         
-        api_key_base64 = os.environ.get('GIGACHAT_API_KEY')
-        if not api_key_base64:
-            return {
-                'statusCode': 500,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'isBase64Encoded': False,
-                'body': json.dumps({'error': 'GigaChat API key not configured'})
-            }
+        characters_text = '\n'.join([
+            f"- {char['name']} ({char['role']}): {char.get('personality', '')} | Мотивация: {char.get('motivation', '')}"
+            for char in characters
+        ])
         
-        with GigaChat(credentials=api_key_base64, scope='GIGACHAT_API_PERS', verify_ssl_certs=False) as giga:
-            characters_text = '\n'.join([
-                f"- {char['name']} ({char['role']}): {char.get('personality', '')} | Мотивация: {char.get('motivation', '')}"
-                for char in characters
-            ])
-            
-            prompt = f"""Ты профессиональный писатель. Напиши полноценную книгу со следующими параметрами:
+        prompt = f"""Ты профессиональный писатель. Напиши полноценную книгу со следующими параметрами:
 
 НАЗВАНИЕ: {title}
 ЖАНР: {genre}
@@ -118,30 +161,45 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
 И так далее."""
 
-            response = giga.chat(prompt)
-            book_text = response.choices[0].message.content
+        gigachat_key = os.environ.get('GIGACHAT_API_KEY')
+        openai_key = os.environ.get('OPENAI_API_KEY')
         
-        chapters = []
-        current_chapter = None
-        current_text = []
+        book_text = None
+        used_service = None
+        error_message = None
         
-        for line in book_text.split('\n'):
-            if line.strip().startswith('#'):
-                if current_chapter:
-                    chapters.append({
-                        'title': current_chapter,
-                        'text': '\n'.join(current_text).strip()
-                    })
-                current_chapter = line.strip('#').strip()
-                current_text = []
-            else:
-                current_text.append(line)
+        if gigachat_key:
+            try:
+                book_text = generate_with_gigachat(prompt, gigachat_key)
+                used_service = 'GigaChat'
+            except Exception as e:
+                error_message = f'GigaChat failed: {str(e)}'
+                
+        if not book_text and openai_key:
+            try:
+                book_text = generate_with_openai(prompt, openai_key)
+                used_service = 'OpenAI'
+            except Exception as e:
+                if error_message:
+                    error_message += f' | OpenAI failed: {str(e)}'
+                else:
+                    error_message = f'OpenAI failed: {str(e)}'
         
-        if current_chapter:
-            chapters.append({
-                'title': current_chapter,
-                'text': '\n'.join(current_text).strip()
-            })
+        if not book_text:
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'isBase64Encoded': False,
+                'body': json.dumps({
+                    'error': 'Не удалось сгенерировать книгу. Оба сервиса недоступны.',
+                    'details': error_message
+                })
+            }
+        
+        chapters = parse_chapters(book_text)
         
         return {
             'statusCode': 200,
@@ -152,7 +210,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False,
             'body': json.dumps({
                 'chapters': chapters,
-                'total_chapters': len(chapters)
+                'total_chapters': len(chapters),
+                'generated_by': used_service
             }, ensure_ascii=False)
         }
         
