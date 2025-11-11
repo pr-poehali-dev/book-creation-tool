@@ -106,6 +106,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
             
+            genres = body_data.get('genre', [])
+            if isinstance(genres, list):
+                genre_str = ', '.join(genres)
+            else:
+                genre_str = genres
+                
+            styles = body_data.get('writingStyle', [])
+            if isinstance(styles, list):
+                style_str = ', '.join(styles)
+            else:
+                style_str = styles
+                
+            tones = body_data.get('textTone', [])
+            if isinstance(tones, list):
+                tone_str = ', '.join(tones)
+            else:
+                tone_str = tones
+            
             cur.execute("""
                 INSERT INTO books (user_id, title, genre, description, idea, turning_point,
                                  unique_features, pages, writing_style, text_tone)
@@ -114,14 +132,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             """, (
                 user_id,
                 body_data.get('title', ''),
-                body_data.get('genre', ''),
+                genre_str,
                 body_data.get('description', ''),
                 body_data.get('idea', ''),
                 body_data.get('turningPoint', ''),
                 body_data.get('uniqueFeatures', ''),
                 body_data.get('pages', ''),
-                body_data.get('writingStyle', ''),
-                body_data.get('textTone', '')
+                style_str,
+                tone_str
             ))
             book_id = cur.fetchone()['id']
             

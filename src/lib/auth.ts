@@ -69,7 +69,7 @@ export const auth = {
 };
 
 export const booksApi = {
-  async saveBook(bookData: any): Promise<{ book_id: number; message: string }> {
+  async createBook(bookData: any): Promise<{ book_id: number; message: string }> {
     const token = auth.getToken();
     if (!token) throw new Error('Требуется авторизация');
 
@@ -84,10 +84,35 @@ export const booksApi = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Ошибка сохранения книги');
+      throw new Error(error.error || 'Ошибка создания книги');
     }
 
     return response.json();
+  },
+
+  async updateBook(bookId: string, bookData: any): Promise<{ book_id: number; message: string }> {
+    const token = auth.getToken();
+    if (!token) throw new Error('Требуется авторизация');
+
+    const response = await fetch(BOOKS_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Auth-Token': token
+      },
+      body: JSON.stringify({ ...bookData, id: bookId })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Ошибка обновления книги');
+    }
+
+    return response.json();
+  },
+
+  async saveBook(bookData: any): Promise<{ book_id: number; message: string }> {
+    return this.createBook(bookData);
   },
 
   async getBooks(): Promise<any[]> {

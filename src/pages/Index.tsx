@@ -9,9 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Icon from '@/components/ui/icon';
+import InteractiveAvatar from '@/components/InteractiveAvatar';
+import SwanDecoration from '@/components/SwanDecoration';
 import { toast } from 'sonner';
 import { auth, booksApi, User } from '@/lib/auth';
+import { worldWriters } from '@/data/writers';
 
 type Character = {
   id: string;
@@ -37,7 +42,7 @@ type Chapter = {
 };
 
 type BookData = {
-  genre: string;
+  genre: string[];
   title: string;
   description: string;
   idea: string;
@@ -45,15 +50,56 @@ type BookData = {
   turningPoint: string;
   uniqueFeatures: string;
   pages: string;
-  writingStyle: string;
-  textTone: string;
+  writingStyle: string[];
+  textTone: string[];
   illustrations: IllustrationSettings;
   generatedImages: string[];
   chapters?: Chapter[];
 };
 
+const GENRES = [
+  'фантастика',
+  'фэнтези',
+  'детектив',
+  'приключения',
+  'исторический',
+  'современный',
+  'роман',
+  'триллер',
+  'мистика',
+  'ужасы',
+  'дистопия',
+  'комедия',
+  'драма',
+  'поэзия'
+];
+
+const WRITING_STYLES = [
+  'классический',
+  'современный',
+  'поэтический',
+  'журналистский',
+  'минималистичный',
+  'барочный',
+  'реалистический',
+  'романтический',
+  'экспрессионистский'
+];
+
+const TEXT_TONES = [
+  'торжественный',
+  'лирический',
+  'ироничный',
+  'драматический',
+  'легкий',
+  'философский',
+  'сатирический',
+  'меланхоличный',
+  'энергичный'
+];
+
 const Index = () => {
-  const [activeSection, setActiveSection] = useState<'home' | 'form' | 'library' | 'help' | 'auth'>('home');
+  const [activeSection, setActiveSection] = useState<'home' | 'form' | 'library' | 'help' | 'auth' | 'writers'>('home');
   const [formStep, setFormStep] = useState<'basic' | 'characters' | 'illustrations' | 'settings'>('basic');
   const [books, setBooks] = useState<Array<BookData & { id: string }>>([]);
   const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
@@ -63,6 +109,7 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' });
+  const [editingBook, setEditingBook] = useState<string | null>(null);
   
   const [currentCharacter, setCurrentCharacter] = useState<Omit<Character, 'id'>>({
     name: '',
@@ -75,7 +122,7 @@ const Index = () => {
   });
 
   const [currentBook, setCurrentBook] = useState<BookData>({
-    genre: '',
+    genre: [],
     title: '',
     description: '',
     idea: '',
@@ -83,8 +130,8 @@ const Index = () => {
     turningPoint: '',
     uniqueFeatures: '',
     pages: '',
-    writingStyle: '',
-    textTone: '',
+    writingStyle: [],
+    textTone: [],
     illustrations: {
       count: 3,
       style: 'realistic',
@@ -108,7 +155,7 @@ const Index = () => {
       const mappedBooks = fetchedBooks.map((book: any) => ({
         id: book.id.toString(),
         title: book.title,
-        genre: book.genre,
+        genre: Array.isArray(book.genre) ? book.genre : [book.genre],
         description: book.description,
         idea: book.idea,
         characters: book.characters.map((c: any) => ({
@@ -124,8 +171,8 @@ const Index = () => {
         turningPoint: book.turning_point,
         uniqueFeatures: book.unique_features,
         pages: book.pages,
-        writingStyle: book.writing_style,
-        textTone: book.text_tone,
+        writingStyle: Array.isArray(book.writing_style) ? book.writing_style : [book.writing_style],
+        textTone: Array.isArray(book.text_tone) ? book.text_tone : [book.text_tone],
         illustrations: {
           count: book.illustrations.length,
           style: book.illustrations[0]?.style || 'realistic',
@@ -177,6 +224,48 @@ const Index = () => {
 
   const handleCharacterChange = (field: keyof Omit<Character, 'id'>, value: string) => {
     setCurrentCharacter(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleGenreToggle = (genre: string) => {
+    setCurrentBook(prev => {
+      const genres = prev.genre || [];
+      if (genres.includes(genre)) {
+        return { ...prev, genre: genres.filter(g => g !== genre) };
+      } else if (genres.length < 3) {
+        return { ...prev, genre: [...genres, genre] };
+      } else {
+        toast.error('Можно выбрать максимум 3 жанра');
+        return prev;
+      }
+    });
+  };
+
+  const handleWritingStyleToggle = (style: string) => {
+    setCurrentBook(prev => {
+      const styles = prev.writingStyle || [];
+      if (styles.includes(style)) {
+        return { ...prev, writingStyle: styles.filter(s => s !== style) };
+      } else if (styles.length < 3) {
+        return { ...prev, writingStyle: [...styles, style] };
+      } else {
+        toast.error('Можно выбрать максимум 3 стиля');
+        return prev;
+      }
+    });
+  };
+
+  const handleTextToneToggle = (tone: string) => {
+    setCurrentBook(prev => {
+      const tones = prev.textTone || [];
+      if (tones.includes(tone)) {
+        return { ...prev, textTone: tones.filter(t => t !== tone) };
+      } else if (tones.length < 3) {
+        return { ...prev, textTone: [...tones, tone] };
+      } else {
+        toast.error('Можно выбрать максимум 3 тона');
+        return prev;
+      }
+    });
   };
 
   const addCharacter = () => {
@@ -240,6 +329,38 @@ const Index = () => {
     toast.success('Персонаж удалён');
   };
 
+  const handleEditBook = (book: BookData & { id: string }) => {
+    setEditingBook(book.id);
+    setCurrentBook({
+      genre: book.genre,
+      title: book.title,
+      description: book.description,
+      idea: book.idea,
+      characters: book.characters,
+      turningPoint: book.turningPoint,
+      uniqueFeatures: book.uniqueFeatures,
+      pages: book.pages,
+      writingStyle: book.writingStyle,
+      textTone: book.textTone,
+      illustrations: book.illustrations,
+      generatedImages: book.generatedImages,
+      chapters: book.chapters
+    });
+    setActiveSection('form');
+    setFormStep('basic');
+  };
+
+  const handleChapterEdit = (bookId: string, chapterIndex: number, newText: string) => {
+    setBooks(prev => prev.map(book => {
+      if (book.id === bookId && book.chapters) {
+        const updatedChapters = [...book.chapters];
+        updatedChapters[chapterIndex] = { ...updatedChapters[chapterIndex], text: newText };
+        return { ...book, chapters: updatedChapters };
+      }
+      return book;
+    }));
+  };
+
   const generateIllustrations = async () => {
     setIsGeneratingImages(true);
     toast.info(`Генерирую ${currentBook.illustrations.count} иллюстраций...`);
@@ -248,7 +369,7 @@ const Index = () => {
     
     for (let i = 0; i < currentBook.illustrations.count; i++) {
       try {
-        const prompt = `Book illustration for "${currentBook.title}", ${currentBook.genre} genre, ${currentBook.illustrations.style} art style, ${currentBook.illustrations.colorScheme} color palette, ${currentBook.illustrations.mood} mood, scene ${i + 1} of ${currentBook.illustrations.count}, professional book cover quality`;
+        const prompt = `Book illustration for "${currentBook.title}", ${currentBook.genre.join(', ')} genre, ${currentBook.illustrations.style} art style, ${currentBook.illustrations.colorScheme} color palette, ${currentBook.illustrations.mood} mood, scene ${i + 1} of ${currentBook.illustrations.count}, professional book cover quality`;
         
         const response = await fetch('https://poehali.dev/.api/generate-image', {
           method: 'POST',
@@ -261,31 +382,73 @@ const Index = () => {
         }
         
         const data = await response.json();
-        if (data.image_url) {
-          images.push(data.image_url);
-          toast.success(`Иллюстрация ${i + 1}/${currentBook.illustrations.count} готова`);
-        }
+        images.push(data.url);
+        toast.success(`Иллюстрация ${i + 1}/${currentBook.illustrations.count} готова`);
       } catch (error) {
-        console.error('Error generating image:', error);
-        toast.error(`Ошибка при создании иллюстрации ${i + 1}`);
+        toast.error(`Ошибка генерации иллюстрации ${i + 1}`);
       }
     }
     
     setCurrentBook(prev => ({ ...prev, generatedImages: images }));
     setIsGeneratingImages(false);
-    if (images.length > 0) {
-      toast.success(`Создано ${images.length} иллюстраций!`);
-    }
   };
 
-  const saveBook = async () => {
+  const generateBook = async () => {
+    if (!user) {
+      toast.error('Войдите в аккаунт для создания книги');
+      setActiveSection('auth');
+      return;
+    }
+
+    if (!currentBook.genre.length || !currentBook.title || !currentBook.idea) {
+      toast.error('Заполните все обязательные поля');
+      return;
+    }
+
+    setIsGeneratingBook(true);
+    
     try {
-      await booksApi.saveBook(currentBook);
-      toast.success('Книга сохранена!');
-      setActiveSection('library');
-      setFormStep('basic');
+      const bookPayload = {
+        title: currentBook.title,
+        genre: currentBook.genre,
+        description: currentBook.description,
+        idea: currentBook.idea,
+        turning_point: currentBook.turningPoint,
+        unique_features: currentBook.uniqueFeatures,
+        pages: parseInt(currentBook.pages) || 100,
+        writing_style: currentBook.writingStyle,
+        text_tone: currentBook.textTone,
+        characters: currentBook.characters.map(c => ({
+          name: c.name,
+          age: c.age,
+          appearance: c.appearance,
+          personality: c.personality,
+          background: c.background,
+          motivation: c.motivation,
+          role: c.role
+        })),
+        illustrations: currentBook.generatedImages.map((url, idx) => ({
+          image_url: url,
+          style: currentBook.illustrations.style,
+          color_scheme: currentBook.illustrations.colorScheme,
+          mood: currentBook.illustrations.mood,
+          position: idx
+        }))
+      };
+
+      let createdBook;
+      if (editingBook) {
+        createdBook = await booksApi.updateBook(editingBook, bookPayload);
+        toast.success('Книга обновлена!');
+      } else {
+        createdBook = await booksApi.createBook(bookPayload);
+        toast.success('Книга создана!');
+      }
+
+      await loadBooks();
+      
       setCurrentBook({
-        genre: '',
+        genre: [],
         title: '',
         description: '',
         idea: '',
@@ -293,8 +456,8 @@ const Index = () => {
         turningPoint: '',
         uniqueFeatures: '',
         pages: '',
-        writingStyle: '',
-        textTone: '',
+        writingStyle: [],
+        textTone: [],
         illustrations: {
           count: 3,
           style: 'realistic',
@@ -303,1005 +466,1021 @@ const Index = () => {
         },
         generatedImages: []
       });
-      await loadBooks();
+      setEditingBook(null);
+      setActiveSection('library');
     } catch (error: any) {
       toast.error(error.message);
-    }
-  };
-
-  const generateBookText = async () => {
-    setIsGeneratingBook(true);
-    toast.info('Генерирую текст книги... Это может занять 1-2 минуты');
-    
-    try {
-      const response = await fetch('https://functions.poehali.dev/2f50210e-c8d5-4275-968b-16b64e5f5d39', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: currentBook.title,
-          genre: currentBook.genre,
-          description: currentBook.description,
-          idea: currentBook.idea,
-          characters: currentBook.characters,
-          turningPoint: currentBook.turningPoint,
-          uniqueFeatures: currentBook.uniqueFeatures,
-          pages: currentBook.pages,
-          writingStyle: currentBook.writingStyle,
-          textTone: currentBook.textTone
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Ошибка генерации');
-      }
-      
-      const data = await response.json();
-      setCurrentBook(prev => ({ ...prev, chapters: data.chapters }));
-      toast.success(`Книга готова! Создано ${data.total_chapters} глав`);
-    } catch (error: any) {
-      console.error('Error generating book:', error);
-      toast.error(`Ошибка: ${error.message}`);
     } finally {
       setIsGeneratingBook(false);
     }
   };
 
-  const handleNextStep = () => {
-    if (formStep === 'basic') {
-      if (!currentBook.title || !currentBook.genre) {
-        toast.error('Заполните обязательные поля');
-        return;
-      }
-      setFormStep('characters');
-    } else if (formStep === 'characters') {
-      if (currentBook.characters.length === 0) {
-        toast.error('Добавьте хотя бы одного персонажа');
-        return;
-      }
-      setFormStep('illustrations');
-    } else if (formStep === 'illustrations') {
-      setFormStep('settings');
-    } else {
-      if (!user) {
-        toast.error('Войдите в аккаунт для сохранения книги');
-        setActiveSection('auth');
-        return;
-      }
+  const deleteBook = async (id: string) => {
+    try {
+      await booksApi.deleteBook(id);
+      toast.success('Книга удалена');
+      loadBooks();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative">
+      <SwanDecoration position="left" />
+      <SwanDecoration position="right" />
       
-      saveBook();
-    }
-  };
-
-  const downloadBook = (book: BookData & { id: string }) => {
-    let content = `${book.title}\n${'='.repeat(book.title.length)}\n\n`;
-    content += `Жанр: ${book.genre}\n`;
-    content += `Стиль: ${book.writingStyle}\n`;
-    content += `Тон: ${book.textTone}\n\n`;
-    
-    if (book.chapters && book.chapters.length > 0) {
-      content += `\n\n`;
-      book.chapters.forEach((chapter, idx) => {
-        content += `\n\n═══════════════════════════════════════\n`;
-        content += `ГЛАВА ${idx + 1}: ${chapter.title}\n`;
-        content += `═══════════════════════════════════════\n\n`;
-        content += chapter.text;
-        content += `\n\n`;
-      });
-    } else {
-      content += `${book.description}\n\n`;
-      content += `ГЛАВНАЯ ИДЕЯ\n${book.idea}\n\n`;
-      content += `ПЕРСОНАЖИ\n`;
-      book.characters.forEach(char => {
-        content += `\n${char.name} (${char.role})\n`;
-        content += `Возраст: ${char.age}\n`;
-        content += `Внешность: ${char.appearance}\n`;
-        content += `Характер: ${char.personality}\n`;
-        content += `Предыстория: ${char.background}\n`;
-        content += `Мотивация: ${char.motivation}\n`;
-      });
-      content += `\n\nПОВОРОТНЫЙ МОМЕНТ\n${book.turningPoint}\n\n`;
-      content += `УНИКАЛЬНЫЕ ФИШКИ\n${book.uniqueFeatures}\n\n`;
-    }
-    
-    if (book.generatedImages.length > 0) {
-      content += `\n\nИЛЛЮСТРАЦИИ:\n`;
-      book.generatedImages.forEach((url, idx) => {
-        content += `${idx + 1}. ${url}\n`;
-      });
-    }
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${book.title.replace(/[^a-zа-яё0-9]/gi, '_')}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('Книга скачана!');
-  };
-
-  const renderNavigation = () => (
-    <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Литературная Мастерская</h1>
-          <div className="flex gap-4 items-center">
-            <div className="flex gap-6">
-              {[
-                { id: 'home', label: 'Главная', icon: 'Home' },
-                { id: 'form', label: 'Создать книгу', icon: 'BookPlus' },
-                { id: 'library', label: 'Библиотека', icon: 'Library' },
-                { id: 'help', label: 'Помощь', icon: 'HelpCircle' }
-              ].map(item => (
-                <Button
-                  key={item.id}
-                  variant={activeSection === item.id ? 'default' : 'ghost'}
-                  onClick={() => setActiveSection(item.id as any)}
-                  className="gap-2"
-                >
-                  <Icon name={item.icon as any} size={18} />
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-            {user ? (
-              <div className="flex gap-3 items-center">
-                <Badge variant="secondary" className="px-3 py-1">
-                  <Icon name="User" size={14} className="mr-1" />
-                  {user.name || user.email}
-                </Badge>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
-                  <Icon name="LogOut" size={14} />
-                  Выйти
-                </Button>
-              </div>
-            ) : (
-              <Button variant="default" onClick={() => setActiveSection('auth')} className="gap-2">
-                <Icon name="LogIn" size={18} />
-                Войти
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-
-  const renderHome = () => (
-    <div className="animate-fade-in">
-      <section className="py-20 px-6">
-        <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-6xl font-bold mb-6 leading-tight">
-            Создайте свою книгу с помощью ИИ
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
-            Заполните анкету, создайте детальных персонажей, сгенерируйте иллюстрации — 
-            получите готовую книгу для скачивания
-          </p>
-          <Button 
-            size="lg" 
-            onClick={() => setActiveSection('form')}
-            className="gap-2 text-lg px-8 py-6"
-          >
-            <Icon name="PenTool" size={20} />
-            Начать писать
-          </Button>
-        </div>
-      </section>
-
-      <section className="py-16 px-6 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <h3 className="text-4xl font-bold text-center mb-12">Как это работает</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              {
-                icon: 'FileText',
-                title: 'Опишите книгу',
-                description: 'Жанр, сюжет, идея и уникальные особенности'
-              },
-              {
-                icon: 'Users',
-                title: 'Создайте персонажей',
-                description: 'Детальные анкеты героев с характером и мотивацией'
-              },
-              {
-                icon: 'Image',
-                title: 'Сгенерируйте иллюстрации',
-                description: 'ИИ создаст иллюстрации в выбранном стиле'
-              },
-              {
-                icon: 'Download',
-                title: 'Скачайте книгу',
-                description: 'Получите готовый файл с текстом и картинками'
-              }
-            ].map((step, idx) => (
-              <Card key={idx} className="animate-scale-in hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center mb-4">
-                    <Icon name={step.icon as any} size={28} className="text-accent-foreground" />
-                  </div>
-                  <CardTitle className="text-xl">{step.title}</CardTitle>
-                  <CardDescription className="text-sm leading-relaxed">
-                    {step.description}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-
-  const renderCharacterDialog = () => (
-    <Dialog open={isCharacterDialogOpen} onOpenChange={setIsCharacterDialogOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">
-            {editingCharacter ? 'Редактировать персонажа' : 'Добавить персонажа'}
-          </DialogTitle>
-          <DialogDescription>
-            Заполните детальную анкету для создания живого персонажа
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Имя персонажа *</Label>
-              <Input 
-                value={currentCharacter.name}
-                onChange={(e) => handleCharacterChange('name', e.target.value)}
-                placeholder="Иван Петров"
-              />
+      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="book-open" className="h-8 w-8 text-purple-600" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                BookGen AI
+              </h1>
             </div>
             
-            <div className="space-y-2">
-              <Label>Возраст</Label>
-              <Input 
-                value={currentCharacter.age}
-                onChange={(e) => handleCharacterChange('age', e.target.value)}
-                placeholder="25 лет"
-              />
-            </div>
-          </div>
+            <nav className="flex items-center gap-4">
+              <Button
+                variant={activeSection === 'home' ? 'default' : 'ghost'}
+                onClick={() => setActiveSection('home')}
+              >
+                <Icon name="home" className="h-4 w-4 mr-2" />
+                Главная
+              </Button>
+              
+              {user && (
+                <>
+                  <Button
+                    variant={activeSection === 'form' ? 'default' : 'ghost'}
+                    onClick={() => {
+                      setActiveSection('form');
+                      setEditingBook(null);
+                      setCurrentBook({
+                        genre: [],
+                        title: '',
+                        description: '',
+                        idea: '',
+                        characters: [],
+                        turningPoint: '',
+                        uniqueFeatures: '',
+                        pages: '',
+                        writingStyle: [],
+                        textTone: [],
+                        illustrations: {
+                          count: 3,
+                          style: 'realistic',
+                          colorScheme: 'warm',
+                          mood: 'dramatic'
+                        },
+                        generatedImages: []
+                      });
+                    }}
+                  >
+                    <Icon name="plus" className="h-4 w-4 mr-2" />
+                    Создать книгу
+                  </Button>
+                  
+                  <Button
+                    variant={activeSection === 'library' ? 'default' : 'ghost'}
+                    onClick={() => setActiveSection('library')}
+                  >
+                    <Icon name="library" className="h-4 w-4 mr-2" />
+                    Библиотека
+                  </Button>
+                </>
+              )}
+              
+              <Button
+                variant={activeSection === 'writers' ? 'default' : 'ghost'}
+                onClick={() => setActiveSection('writers')}
+              >
+                <Icon name="users" className="h-4 w-4 mr-2" />
+                Писатели
+              </Button>
+              
+              <Button
+                variant={activeSection === 'help' ? 'default' : 'ghost'}
+                onClick={() => setActiveSection('help')}
+              >
+                <Icon name="help-circle" className="h-4 w-4 mr-2" />
+                Помощь
+              </Button>
 
-          <div className="space-y-2">
-            <Label>Роль в истории</Label>
-            <Select 
-              value={currentCharacter.role} 
-              onValueChange={(val) => handleCharacterChange('role', val as any)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="main">Главный герой</SelectItem>
-                <SelectItem value="secondary">Второстепенный персонаж</SelectItem>
-                <SelectItem value="villain">Антагонист/Злодей</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Внешность</Label>
-            <Textarea 
-              value={currentCharacter.appearance}
-              onChange={(e) => handleCharacterChange('appearance', e.target.value)}
-              placeholder="Высокий, светлые волосы, голубые глаза..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Характер и личность</Label>
-            <Textarea 
-              value={currentCharacter.personality}
-              onChange={(e) => handleCharacterChange('personality', e.target.value)}
-              placeholder="Смелый, но импульсивный. Любит справедливость..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Предыстория</Label>
-            <Textarea 
-              value={currentCharacter.background}
-              onChange={(e) => handleCharacterChange('background', e.target.value)}
-              placeholder="Вырос в деревне, потерял родителей в детстве..."
-              rows={4}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Мотивация и цели</Label>
-            <Textarea 
-              value={currentCharacter.motivation}
-              onChange={(e) => handleCharacterChange('motivation', e.target.value)}
-              placeholder="Хочет отомстить за семью и защитить королевство..."
-              rows={3}
-            />
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button onClick={addCharacter} className="flex-1">
-              <Icon name="Check" size={18} className="mr-2" />
-              {editingCharacter ? 'Сохранить' : 'Добавить'}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setIsCharacterDialogOpen(false);
-                setEditingCharacter(null);
-                setCurrentCharacter({
-                  name: '',
-                  age: '',
-                  appearance: '',
-                  personality: '',
-                  background: '',
-                  motivation: '',
-                  role: 'main'
-                });
-              }}
-            >
-              Отмена
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-
-  const renderForm = () => (
-    <div className="py-12 px-6 animate-fade-in">
-      <div className="container mx-auto max-w-3xl">
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            {['basic', 'characters', 'illustrations', 'settings'].map((step, idx) => (
-              <div key={step} className="flex items-center flex-1">
-                <div className={`h-2 w-full rounded ${
-                  formStep === step ? 'bg-primary' : 
-                  ['basic', 'characters', 'illustrations', 'settings'].indexOf(formStep) > idx ? 'bg-primary/50' : 'bg-muted'
-                }`} />
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Шаг {['basic', 'characters', 'illustrations', 'settings'].indexOf(formStep) + 1} из 4
-          </p>
-        </div>
-
-        <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-3xl">
-              {formStep === 'basic' && 'Основная информация'}
-              {formStep === 'characters' && 'Персонажи'}
-              {formStep === 'illustrations' && 'Иллюстрации'}
-              {formStep === 'settings' && 'Настройки книги'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {formStep === 'basic' && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="genre">Жанр книги *</Label>
-                  <Select value={currentBook.genre} onValueChange={(val) => handleInputChange('genre', val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите жанр" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fantasy">Фэнтези</SelectItem>
-                      <SelectItem value="scifi">Научная фантастика</SelectItem>
-                      <SelectItem value="detective">Детектив</SelectItem>
-                      <SelectItem value="romance">Роман</SelectItem>
-                      <SelectItem value="thriller">Триллер</SelectItem>
-                      <SelectItem value="drama">Драма</SelectItem>
-                      <SelectItem value="historical">Исторический</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="title">Название книги *</Label>
-                  <Input 
-                    id="title"
-                    value={currentBook.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Введите название вашей книги"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Описание сюжета</Label>
-                  <Textarea
-                    id="description"
-                    value={currentBook.description}
-                    onChange={(e) => handleInputChange('description', e.target.value)}
-                    placeholder="Краткое описание истории..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="idea">Главная идея</Label>
-                  <Textarea
-                    id="idea"
-                    value={currentBook.idea}
-                    onChange={(e) => handleInputChange('idea', e.target.value)}
-                    placeholder="Какую мысль вы хотите донести до читателя?"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="turningPoint">Поворотный момент</Label>
-                  <Textarea
-                    id="turningPoint"
-                    value={currentBook.turningPoint}
-                    onChange={(e) => handleInputChange('turningPoint', e.target.value)}
-                    placeholder="Ключевое событие, меняющее ход истории..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="uniqueFeatures">Уникальные фишки</Label>
-                  <Textarea
-                    id="uniqueFeatures"
-                    value={currentBook.uniqueFeatures}
-                    onChange={(e) => handleInputChange('uniqueFeatures', e.target.value)}
-                    placeholder="Что делает вашу книгу особенной?"
-                    rows={3}
-                  />
-                </div>
-              </>
-            )}
-
-            {formStep === 'characters' && (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold">Персонажи ({currentBook.characters.length})</h3>
-                    <p className="text-sm text-muted-foreground">Создайте детальные анкеты для всех персонажей</p>
-                  </div>
-                  <Button onClick={() => setIsCharacterDialogOpen(true)} className="gap-2">
-                    <Icon name="Plus" size={18} />
-                    Добавить
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">{user.name}</Badge>
+                  <Button variant="outline" onClick={handleLogout}>
+                    <Icon name="log-out" className="h-4 w-4 mr-2" />
+                    Выйти
                   </Button>
                 </div>
+              ) : (
+                <Button onClick={() => setActiveSection('auth')}>
+                  <Icon name="log-in" className="h-4 w-4 mr-2" />
+                  Войти
+                </Button>
+              )}
+            </nav>
+          </div>
+        </div>
+      </header>
 
-                {currentBook.characters.length === 0 ? (
-                  <Card className="p-8 text-center border-dashed">
-                    <Icon name="Users" size={48} className="mx-auto mb-3 text-muted-foreground" />
-                    <p className="text-muted-foreground mb-4">Пока нет персонажей</p>
-                    <Button onClick={() => setIsCharacterDialogOpen(true)} variant="outline" className="gap-2">
-                      <Icon name="Plus" size={16} />
-                      Создать первого персонажа
-                    </Button>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {currentBook.characters.map(char => (
-                      <Card key={char.id} className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold text-lg">{char.name}</h4>
-                              <Badge variant={
-                                char.role === 'main' ? 'default' : 
-                                char.role === 'villain' ? 'destructive' : 'secondary'
-                              }>
-                                {char.role === 'main' ? 'Главный' : 
-                                 char.role === 'villain' ? 'Злодей' : 'Второстепенный'}
-                              </Badge>
-                            </div>
-                            {char.age && <p className="text-sm text-muted-foreground mb-1">Возраст: {char.age}</p>}
-                            {char.personality && (
-                              <p className="text-sm line-clamp-2">{char.personality}</p>
-                            )}
-                          </div>
-                          <div className="flex gap-2 ml-4">
-                            <Button size="sm" variant="ghost" onClick={() => editCharacter(char)}>
-                              <Icon name="Edit" size={16} />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => deleteCharacter(char.id)}>
-                              <Icon name="Trash2" size={16} />
-                            </Button>
-                          </div>
+      <main className="container mx-auto px-4 py-8">
+        {activeSection === 'home' && (
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <SwanDecoration position="center">
+                <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+                  Создавайте книги с помощью ИИ
+                </h2>
+              </SwanDecoration>
+              <p className="text-xl text-gray-600 mb-8">
+                Ваш персональный помощник в создании уникальных литературных произведений
+              </p>
+              
+              {user ? (
+                <Button size="lg" onClick={() => setActiveSection('form')}>
+                  <Icon name="sparkles" className="h-5 w-5 mr-2" />
+                  Начать создание книги
+                </Button>
+              ) : (
+                <Button size="lg" onClick={() => setActiveSection('auth')}>
+                  <Icon name="log-in" className="h-5 w-5 mr-2" />
+                  Войти для начала работы
+                </Button>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 mb-12">
+              <Card>
+                <CardHeader>
+                  <Icon name="brain" className="h-12 w-12 text-purple-600 mb-2" />
+                  <CardTitle>ИИ генерация</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    Мощный искусственный интеллект создаст уникальный сюжет и персонажей для вашей книги
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <Icon name="image" className="h-12 w-12 text-pink-600 mb-2" />
+                  <CardTitle>Иллюстрации</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    Автоматическая генерация иллюстраций в выбранном стиле для вашей книги
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <Icon name="download" className="h-12 w-12 text-blue-600 mb-2" />
+                  <CardTitle>Экспорт</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    Скачайте готовую книгу в различных форматах для печати или чтения
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'form' && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle>{editingBook ? 'Редактирование книги' : 'Создание новой книги'}</CardTitle>
+              <CardDescription>
+                {editingBook ? 'Внесите изменения и пересоздайте книгу' : 'Заполните информацию для генерации вашей книги'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={formStep} onValueChange={(v) => setFormStep(v as any)}>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="basic">Основное</TabsTrigger>
+                  <TabsTrigger value="characters">Персонажи</TabsTrigger>
+                  <TabsTrigger value="illustrations">Иллюстрации</TabsTrigger>
+                  <TabsTrigger value="settings">Настройки</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="basic" className="space-y-4">
+                  <div>
+                    <Label>Жанры (выберите до 3)</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                      {GENRES.map((genre) => (
+                        <div key={genre} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`genre-${genre}`}
+                            checked={currentBook.genre.includes(genre)}
+                            onCheckedChange={() => handleGenreToggle(genre)}
+                          />
+                          <label
+                            htmlFor={`genre-${genre}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {genre}
+                          </label>
                         </div>
-                      </Card>
-                    ))}
+                      ))}
+                    </div>
+                    {currentBook.genre.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {currentBook.genre.map(g => (
+                          <Badge key={g} variant="secondary">{g}</Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-                {renderCharacterDialog()}
-              </>
-            )}
 
-            {formStep === 'illustrations' && (
-              <>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <Label>Количество иллюстраций: {currentBook.illustrations.count}</Label>
-                    <Slider 
-                      value={[currentBook.illustrations.count]}
-                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, count: val[0] })}
-                      min={1}
-                      max={10}
-                      step={1}
+                  <div>
+                    <Label htmlFor="title">Название книги *</Label>
+                    <Input
+                      id="title"
+                      value={currentBook.title}
+                      onChange={(e) => handleInputChange('title', e.target.value)}
+                      placeholder="Введите название..."
                     />
-                    <p className="text-xs text-muted-foreground">От 1 до 10 иллюстраций</p>
                   </div>
 
-                  <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="description">Описание</Label>
+                    <Textarea
+                      id="description"
+                      value={currentBook.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      placeholder="Краткое описание книги..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="idea">Основная идея *</Label>
+                    <Textarea
+                      id="idea"
+                      value={currentBook.idea}
+                      onChange={(e) => handleInputChange('idea', e.target.value)}
+                      placeholder="Опишите главную идею или концепцию книги..."
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="turningPoint">Поворотный момент</Label>
+                    <Textarea
+                      id="turningPoint"
+                      value={currentBook.turningPoint}
+                      onChange={(e) => handleInputChange('turningPoint', e.target.value)}
+                      placeholder="Ключевой момент, меняющий ход сюжета..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="uniqueFeatures">Уникальные особенности</Label>
+                    <Textarea
+                      id="uniqueFeatures"
+                      value={currentBook.uniqueFeatures}
+                      onChange={(e) => handleInputChange('uniqueFeatures', e.target.value)}
+                      placeholder="Что делает вашу книгу особенной..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pages">Количество страниц</Label>
+                    <Input
+                      id="pages"
+                      type="number"
+                      value={currentBook.pages}
+                      onChange={(e) => handleInputChange('pages', e.target.value)}
+                      placeholder="100"
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="characters" className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Персонажи книги</h3>
+                    <Dialog open={isCharacterDialogOpen} onOpenChange={setIsCharacterDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Icon name="plus" className="h-4 w-4 mr-2" />
+                          Добавить персонажа
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>
+                            {editingCharacter ? 'Редактировать персонажа' : 'Добавить персонажа'}
+                          </DialogTitle>
+                          <DialogDescription>
+                            Заполните информацию о персонаже вашей книги
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="char-name">Имя *</Label>
+                            <Input
+                              id="char-name"
+                              value={currentCharacter.name}
+                              onChange={(e) => handleCharacterChange('name', e.target.value)}
+                              placeholder="Имя персонажа"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="char-age">Возраст</Label>
+                            <Input
+                              id="char-age"
+                              value={currentCharacter.age}
+                              onChange={(e) => handleCharacterChange('age', e.target.value)}
+                              placeholder="25 лет"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="char-role">Роль</Label>
+                            <Select
+                              value={currentCharacter.role}
+                              onValueChange={(v) => handleCharacterChange('role', v as any)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="main">Главный герой</SelectItem>
+                                <SelectItem value="secondary">Второстепенный</SelectItem>
+                                <SelectItem value="villain">Антагонист</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="char-appearance">Внешность</Label>
+                            <Textarea
+                              id="char-appearance"
+                              value={currentCharacter.appearance}
+                              onChange={(e) => handleCharacterChange('appearance', e.target.value)}
+                              placeholder="Описание внешности..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="char-personality">Характер</Label>
+                            <Textarea
+                              id="char-personality"
+                              value={currentCharacter.personality}
+                              onChange={(e) => handleCharacterChange('personality', e.target.value)}
+                              placeholder="Черты характера, особенности..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="char-background">Предыстория</Label>
+                            <Textarea
+                              id="char-background"
+                              value={currentCharacter.background}
+                              onChange={(e) => handleCharacterChange('background', e.target.value)}
+                              placeholder="История персонажа до начала книги..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="char-motivation">Мотивация</Label>
+                            <Textarea
+                              id="char-motivation"
+                              value={currentCharacter.motivation}
+                              onChange={(e) => handleCharacterChange('motivation', e.target.value)}
+                              placeholder="Что движет персонажем..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <Button onClick={addCharacter} className="w-full">
+                            {editingCharacter ? 'Сохранить изменения' : 'Добавить персонажа'}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {currentBook.characters.length === 0 ? (
+                    <Card>
+                      <CardContent className="py-8 text-center text-gray-500">
+                        <Icon name="users" className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>Персонажи еще не добавлены</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-4">
+                      {currentBook.characters.map((character) => (
+                        <Card key={character.id}>
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle>{character.name}</CardTitle>
+                                <CardDescription>
+                                  {character.age && `${character.age} • `}
+                                  {character.role === 'main' && 'Главный герой'}
+                                  {character.role === 'secondary' && 'Второстепенный'}
+                                  {character.role === 'villain' && 'Антагонист'}
+                                </CardDescription>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => editCharacter(character)}
+                                >
+                                  <Icon name="pencil" className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => deleteCharacter(character.id)}
+                                >
+                                  <Icon name="trash-2" className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          {(character.appearance || character.personality || character.background || character.motivation) && (
+                            <CardContent className="space-y-2">
+                              {character.appearance && (
+                                <div>
+                                  <p className="text-sm font-semibold">Внешность:</p>
+                                  <p className="text-sm text-gray-600">{character.appearance}</p>
+                                </div>
+                              )}
+                              {character.personality && (
+                                <div>
+                                  <p className="text-sm font-semibold">Характер:</p>
+                                  <p className="text-sm text-gray-600">{character.personality}</p>
+                                </div>
+                              )}
+                              {character.background && (
+                                <div>
+                                  <p className="text-sm font-semibold">Предыстория:</p>
+                                  <p className="text-sm text-gray-600">{character.background}</p>
+                                </div>
+                              )}
+                              {character.motivation && (
+                                <div>
+                                  <p className="text-sm font-semibold">Мотивация:</p>
+                                  <p className="text-sm text-gray-600">{character.motivation}</p>
+                                </div>
+                              )}
+                            </CardContent>
+                          )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="illustrations" className="space-y-4">
+                  <div>
+                    <Label>Количество иллюстраций: {currentBook.illustrations.count}</Label>
+                    <Slider
+                      value={[currentBook.illustrations.count]}
+                      onValueChange={([value]) => handleInputChange('illustrations', {
+                        ...currentBook.illustrations,
+                        count: value
+                      })}
+                      min={0}
+                      max={25}
+                      step={1}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  <div>
                     <Label>Стиль иллюстраций</Label>
-                    <Select 
-                      value={currentBook.illustrations.style} 
-                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, style: val })}
+                    <Select
+                      value={currentBook.illustrations.style}
+                      onValueChange={(v) => handleInputChange('illustrations', {
+                        ...currentBook.illustrations,
+                        style: v
+                      })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="realistic">Реалистичный</SelectItem>
+                        <SelectItem value="cartoon">Мультяшный</SelectItem>
                         <SelectItem value="watercolor">Акварель</SelectItem>
-                        <SelectItem value="oil-painting">Масляная живопись</SelectItem>
-                        <SelectItem value="digital-art">Цифровое искусство</SelectItem>
-                        <SelectItem value="sketch">Скетч/Набросок</SelectItem>
-                        <SelectItem value="anime">Аниме</SelectItem>
-                        <SelectItem value="comic">Комикс</SelectItem>
+                        <SelectItem value="oil">Масло</SelectItem>
+                        <SelectItem value="pencil">Карандаш</SelectItem>
+                        <SelectItem value="digital">Цифровой</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Цветовая палитра</Label>
-                    <Select 
-                      value={currentBook.illustrations.colorScheme} 
-                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, colorScheme: val })}
+                  <div>
+                    <Label>Цветовая схема</Label>
+                    <Select
+                      value={currentBook.illustrations.colorScheme}
+                      onValueChange={(v) => handleInputChange('illustrations', {
+                        ...currentBook.illustrations,
+                        colorScheme: v
+                      })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="warm">Тёплые тона</SelectItem>
-                        <SelectItem value="cold">Холодные тона</SelectItem>
-                        <SelectItem value="vibrant">Яркие цвета</SelectItem>
-                        <SelectItem value="pastel">Пастельные</SelectItem>
+                        <SelectItem value="warm">Теплая</SelectItem>
+                        <SelectItem value="cool">Холодная</SelectItem>
                         <SelectItem value="monochrome">Монохром</SelectItem>
-                        <SelectItem value="dark">Тёмные тона</SelectItem>
+                        <SelectItem value="vibrant">Яркая</SelectItem>
+                        <SelectItem value="pastel">Пастель</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div>
                     <Label>Настроение</Label>
-                    <Select 
-                      value={currentBook.illustrations.mood} 
-                      onValueChange={(val) => handleInputChange('illustrations', { ...currentBook.illustrations, mood: val })}
+                    <Select
+                      value={currentBook.illustrations.mood}
+                      onValueChange={(v) => handleInputChange('illustrations', {
+                        ...currentBook.illustrations,
+                        mood: v
+                      })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="dramatic">Драматичное</SelectItem>
-                        <SelectItem value="peaceful">Умиротворённое</SelectItem>
+                        <SelectItem value="peaceful">Умиротворенное</SelectItem>
                         <SelectItem value="mysterious">Таинственное</SelectItem>
-                        <SelectItem value="epic">Эпичное</SelectItem>
-                        <SelectItem value="romantic">Романтичное</SelectItem>
-                        <SelectItem value="dark">Мрачное</SelectItem>
+                        <SelectItem value="joyful">Радостное</SelectItem>
+                        <SelectItem value="melancholic">Меланхоличное</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <div className="bg-muted/50 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-2">Предпросмотр настроек:</h4>
-                    <p className="text-sm">
-                      Будет создано <strong>{currentBook.illustrations.count}</strong> иллюстраций 
-                      в стиле <strong>{currentBook.illustrations.style}</strong> с{' '}
-                      <strong>{currentBook.illustrations.colorScheme}</strong> палитрой и{' '}
-                      <strong>{currentBook.illustrations.mood}</strong> настроением
-                    </p>
-                  </div>
-
-                  <Button 
-                    onClick={generateIllustrations} 
-                    disabled={isGeneratingImages}
-                    className="w-full gap-2"
-                    size="lg"
+                  <Button
+                    onClick={generateIllustrations}
+                    disabled={isGeneratingImages || currentBook.illustrations.count === 0}
+                    className="w-full"
                   >
-                    <Icon name={isGeneratingImages ? "Loader2" : "Sparkles"} size={20} className={isGeneratingImages ? "animate-spin" : ""} />
-                    {isGeneratingImages ? 'Генерирую иллюстрации...' : 'Сгенерировать иллюстрации сейчас'}
+                    {isGeneratingImages ? (
+                      <>
+                        <Icon name="loader-2" className="h-4 w-4 mr-2 animate-spin" />
+                        Генерация...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="image" className="h-4 w-4 mr-2" />
+                        Сгенерировать иллюстрации
+                      </>
+                    )}
                   </Button>
 
                   {currentBook.generatedImages.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold">Сгенерированные иллюстрации:</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        {currentBook.generatedImages.map((url, idx) => (
-                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border">
-                            <img src={url} alt={`Illustration ${idx + 1}`} className="w-full h-full object-cover" />
-                            <Badge className="absolute top-2 right-2">#{idx + 1}</Badge>
-                          </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      {currentBook.generatedImages.map((url, idx) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt={`Иллюстрация ${idx + 1}`}
+                          className="rounded-lg w-full h-48 object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="settings" className="space-y-4">
+                  <div>
+                    <Label>Стиль письма (выберите до 3)</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                      {WRITING_STYLES.map((style) => (
+                        <div key={style} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`style-${style}`}
+                            checked={currentBook.writingStyle.includes(style)}
+                            onCheckedChange={() => handleWritingStyleToggle(style)}
+                          />
+                          <label
+                            htmlFor={`style-${style}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {style}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {currentBook.writingStyle.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {currentBook.writingStyle.map(s => (
+                          <Badge key={s} variant="secondary">{s}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>Тон текста (выберите до 3)</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                      {TEXT_TONES.map((tone) => (
+                        <div key={tone} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`tone-${tone}`}
+                            checked={currentBook.textTone.includes(tone)}
+                            onCheckedChange={() => handleTextToneToggle(tone)}
+                          />
+                          <label
+                            htmlFor={`tone-${tone}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {tone}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                    {currentBook.textTone.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {currentBook.textTone.map(t => (
+                          <Badge key={t} variant="secondary">{t}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex gap-4 mt-6">
+                <Button
+                  onClick={generateBook}
+                  disabled={isGeneratingBook}
+                  className="flex-1"
+                  size="lg"
+                >
+                  {isGeneratingBook ? (
+                    <>
+                      <Icon name="loader-2" className="h-5 w-5 mr-2 animate-spin" />
+                      Генерация книги...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="sparkles" className="h-5 w-5 mr-2" />
+                      {editingBook ? 'Обновить книгу' : 'Сгенерировать книгу'}
+                    </>
+                  )}
+                </Button>
+                {editingBook && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingBook(null);
+                      setCurrentBook({
+                        genre: [],
+                        title: '',
+                        description: '',
+                        idea: '',
+                        characters: [],
+                        turningPoint: '',
+                        uniqueFeatures: '',
+                        pages: '',
+                        writingStyle: [],
+                        textTone: [],
+                        illustrations: {
+                          count: 3,
+                          style: 'realistic',
+                          colorScheme: 'warm',
+                          mood: 'dramatic'
+                        },
+                        generatedImages: []
+                      });
+                      setActiveSection('library');
+                    }}
+                  >
+                    Отменить
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === 'library' && (
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6">Моя библиотека</h2>
+            
+            {books.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Icon name="book-open" className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-xl text-gray-500 mb-4">Ваша библиотека пуста</p>
+                  <Button onClick={() => setActiveSection('form')}>
+                    <Icon name="plus" className="h-4 w-4 mr-2" />
+                    Создать первую книгу
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {books.map((book) => (
+                  <Card key={book.id} className="overflow-hidden">
+                    {book.generatedImages.length > 0 && (
+                      <img
+                        src={book.generatedImages[0]}
+                        alt={book.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    )}
+                    <CardHeader>
+                      <CardTitle>{book.title}</CardTitle>
+                      <CardDescription>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {book.genre.map((g, idx) => (
+                            <Badge key={idx} variant="secondary">{g}</Badge>
+                          ))}
+                        </div>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-4">{book.description}</p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge variant="outline">
+                          <Icon name="users" className="h-3 w-3 mr-1" />
+                          {book.characters.length} персонажей
+                        </Badge>
+                        <Badge variant="outline">
+                          <Icon name="image" className="h-3 w-3 mr-1" />
+                          {book.generatedImages.length} иллюстраций
+                        </Badge>
+                        {book.chapters && (
+                          <Badge variant="outline">
+                            <Icon name="book" className="h-3 w-3 mr-1" />
+                            {book.chapters.length} глав
+                          </Badge>
+                        )}
+                      </div>
+
+                      {book.chapters && book.chapters.length > 0 && (
+                        <div className="space-y-3 mb-4">
+                          <Label className="text-sm font-semibold">Главы:</Label>
+                          {book.chapters.map((chapter, idx) => (
+                            <div key={idx} className="space-y-2">
+                              <Label className="text-xs font-medium">{chapter.title}</Label>
+                              <Textarea
+                                value={chapter.text}
+                                onChange={(e) => handleChapterEdit(book.id, idx, e.target.value)}
+                                rows={4}
+                                className="text-xs"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => handleEditBook(book)}
+                        >
+                          <Icon name="pencil" className="h-3 w-3 mr-1" />
+                          Редактировать
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (confirm('Удалить эту книгу?')) {
+                              deleteBook(book.id);
+                            }
+                          }}
+                        >
+                          <Icon name="trash-2" className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'writers' && (
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl font-bold mb-6">Великие писатели мира</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {worldWriters.map((writer) => (
+                <Card key={writer.id} className="overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="text-xl">{writer.nameRu}</CardTitle>
+                    <CardDescription>
+                      <div className="space-y-1">
+                        <p className="text-sm">{writer.name}</p>
+                        <p className="text-sm font-semibold">{writer.countryRu} • {writer.years}</p>
+                      </div>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-gray-700">{writer.description}</p>
+                    
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 mb-1">Известные произведения:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {writer.famousWorks.map((work, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {work}
+                          </Badge>
                         ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              </>
-            )}
 
-            {formStep === 'settings' && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="pages">Объём книги (страниц)</Label>
-                  <Select value={currentBook.pages} onValueChange={(val) => handleInputChange('pages', val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите примерный объём" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="50-100">50-100 страниц (новелла)</SelectItem>
-                      <SelectItem value="100-200">100-200 страниц (повесть)</SelectItem>
-                      <SelectItem value="200-300">200-300 страниц (роман)</SelectItem>
-                      <SelectItem value="300+">300+ страниц (большой роман)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="writingStyle">Стиль повествования</Label>
-                  <Select value={currentBook.writingStyle} onValueChange={(val) => handleInputChange('writingStyle', val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите стиль" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="literary">Литературный (классический)</SelectItem>
-                      <SelectItem value="conversational">Разговорный (современный)</SelectItem>
-                      <SelectItem value="poetic">Поэтичный (образный)</SelectItem>
-                      <SelectItem value="journalistic">Публицистический (динамичный)</SelectItem>
-                      <SelectItem value="minimalist">Минималистичный (лаконичный)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="textTone">Тон текста</Label>
-                  <Select value={currentBook.textTone} onValueChange={(val) => handleInputChange('textTone', val)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите тон" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="serious">Серьёзный</SelectItem>
-                      <SelectItem value="light">Лёгкий</SelectItem>
-                      <SelectItem value="dramatic">Драматичный</SelectItem>
-                      <SelectItem value="humorous">Юмористический</SelectItem>
-                      <SelectItem value="philosophical">Философский</SelectItem>
-                      <SelectItem value="mysterious">Таинственный</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <h4 className="font-semibold mb-2 text-lg">Итоговые параметры книги:</h4>
-                  <div className="space-y-1 text-sm">
-                    <p><strong>Название:</strong> {currentBook.title}</p>
-                    <p><strong>Жанр:</strong> {currentBook.genre}</p>
-                    <p><strong>Персонажей:</strong> {currentBook.characters.length}</p>
-                    <p><strong>Иллюстраций:</strong> {currentBook.generatedImages.length}</p>
-                    <p><strong>Объём:</strong> {currentBook.pages || 'Не указан'}</p>
-                    <p><strong>Стиль:</strong> {currentBook.writingStyle || 'Не указан'}</p>
-                    <p><strong>Тон:</strong> {currentBook.textTone || 'Не указан'}</p>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={generateBookText} 
-                  disabled={isGeneratingBook}
-                  className="w-full gap-2"
-                  size="lg"
-                  variant="default"
-                >
-                  <Icon name={isGeneratingBook ? "Loader2" : "BookOpen"} size={20} className={isGeneratingBook ? "animate-spin" : ""} />
-                  {isGeneratingBook ? 'Генерирую книгу...' : 'Сгенерировать текст книги'}
-                </Button>
-
-                {currentBook.chapters && currentBook.chapters.length > 0 && (
-                  <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon name="Check" size={20} className="text-green-500" />
-                      <h4 className="font-semibold text-green-500">Книга сгенерирована!</h4>
+                    <div className="pt-3 border-t">
+                      <p className="text-sm italic text-gray-600">"{writer.quote}"</p>
                     </div>
-                    <p className="text-sm">Создано {currentBook.chapters.length} глав. Нажмите "Создать книгу" чтобы сохранить её.</p>
-                  </div>
-                )}
-              </>
-            )}
-
-            <div className="flex gap-4 pt-4">
-              {formStep !== 'basic' && (
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    const steps: Array<'basic' | 'characters' | 'illustrations' | 'settings'> = 
-                      ['basic', 'characters', 'illustrations', 'settings'];
-                    const currentIdx = steps.indexOf(formStep);
-                    if (currentIdx > 0) setFormStep(steps[currentIdx - 1]);
-                  }}
-                  className="gap-2"
-                >
-                  <Icon name="ArrowLeft" size={18} />
-                  Назад
-                </Button>
-              )}
-              <Button onClick={handleNextStep} className="flex-1 gap-2">
-                {formStep === 'settings' ? (
-                  <>
-                    <Icon name="Check" size={18} />
-                    Создать книгу
-                  </>
-                ) : (
-                  <>
-                    Далее
-                    <Icon name="ArrowRight" size={18} />
-                  </>
-                )}
-              </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const renderLibrary = () => (
-    <div className="py-12 px-6 animate-fade-in">
-      <div className="container mx-auto max-w-6xl">
-        <div className="mb-8">
-          <h2 className="text-4xl font-bold mb-2">Ваша библиотека</h2>
-          <p className="text-muted-foreground text-lg">
-            {books.length === 0 ? 'Пока нет созданных книг' : `Всего книг: ${books.length}`}
-          </p>
-        </div>
-
-        {books.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Icon name="BookOpen" size={64} className="mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-2xl font-semibold mb-2">Библиотека пуста</h3>
-            <p className="text-muted-foreground mb-6">Создайте свою первую книгу</p>
-            <Button onClick={() => setActiveSection('form')} className="gap-2">
-              <Icon name="Plus" size={18} />
-              Создать книгу
-            </Button>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {books.map(book => (
-              <Card key={book.id} className="hover:shadow-lg transition-all animate-scale-in overflow-hidden">
-                {book.generatedImages.length > 0 && (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img 
-                      src={book.generatedImages[0]} 
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <CardHeader>
-                  <div className="flex items-start justify-between mb-2 gap-2 flex-wrap">
-                    <Badge variant="secondary">{book.genre}</Badge>
-                    <Badge variant="outline">{book.characters.length} персонажей</Badge>
-                    {book.chapters && book.chapters.length > 0 && (
-                      <Badge variant="default" className="bg-green-500">{book.chapters.length} глав</Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-xl line-clamp-2">{book.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {book.chapters && book.chapters.length > 0 ? `Полная книга с ${book.chapters.length} главами` : book.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      className="flex-1 gap-2"
-                      onClick={() => downloadBook(book)}
-                    >
-                      <Icon name="Download" size={16} />
-                      Скачать
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Icon name="Eye" size={16} />
-                      Просмотр
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         )}
-      </div>
-    </div>
-  );
 
-  const renderHelp = () => (
-    <div className="py-12 px-6 animate-fade-in">
-      <div className="container mx-auto max-w-4xl">
-        <h2 className="text-4xl font-bold mb-8">Помощь и советы</h2>
-        
-        <Tabs defaultValue="faq" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="faq">FAQ</TabsTrigger>
-            <TabsTrigger value="tips">Советы</TabsTrigger>
-            <TabsTrigger value="examples">Примеры</TabsTrigger>
-          </TabsList>
+        {activeSection === 'help' && (
+          <Card className="max-w-3xl mx-auto">
+            <CardHeader>
+              <CardTitle>Помощь и FAQ</CardTitle>
+              <CardDescription>Ответы на часто задаваемые вопросы</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="create-book">
+                  <AccordionTrigger>Как создать книгу?</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      <p>1. Войдите в свой аккаунт или зарегистрируйтесь</p>
+                      <p>2. Нажмите кнопку "Создать книгу" в меню</p>
+                      <p>3. Заполните основную информацию: выберите жанры (до 3), придумайте название и опишите основную идею</p>
+                      <p>4. Добавьте персонажей с их характеристиками</p>
+                      <p>5. Настройте параметры иллюстраций и сгенерируйте их (до 25 штук)</p>
+                      <p>6. Выберите стиль письма и тон текста (до 3 каждого)</p>
+                      <p>7. Нажмите "Сгенерировать книгу" и дождитесь завершения</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
 
-          <TabsContent value="faq" className="space-y-4">
-            {[
-              {
-                q: 'Как создать персонажа?',
-                a: 'На шаге "Персонажи" нажмите "Добавить" и заполните детальную анкету с внешностью, характером и предысторией.'
-              },
-              {
-                q: 'Сколько иллюстраций можно создать?',
-                a: 'От 1 до 10 иллюстраций на книгу. Выберите стиль, цвета и настроение — ИИ создаст уникальные изображения.'
-              },
-              {
-                q: 'В каком формате скачивается книга?',
-                a: 'Книга скачивается в текстовом формате (.txt) со всей информацией и ссылками на иллюстрации.'
-              },
-              {
-                q: 'Можно ли редактировать персонажей?',
-                a: 'Да, в списке персонажей нажмите на иконку редактирования для изменения любых данных.'
-              }
-            ].map((item, idx) => (
-              <Card key={idx}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{item.q}</CardTitle>
-                  <CardDescription>{item.a}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </TabsContent>
+                <AccordionItem value="login">
+                  <AccordionTrigger>Как войти в аккаунт?</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Для входа:</strong></p>
+                      <p>1. Нажмите кнопку "Войти" в правом верхнем углу</p>
+                      <p>2. Введите свой email и пароль</p>
+                      <p>3. Нажмите "Войти"</p>
+                      
+                      <p className="pt-3"><strong>Для регистрации:</strong></p>
+                      <p>1. На странице входа переключитесь на "Регистрация"</p>
+                      <p>2. Введите имя, email и придумайте надежный пароль</p>
+                      <p>3. Нажмите "Зарегистрироваться"</p>
+                      <p>4. После регистрации вы автоматически войдете в систему</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
 
-          <TabsContent value="tips" className="space-y-4">
-            {[
-              {
-                icon: 'UserPlus',
-                title: 'Создавайте детальных персонажей',
-                desc: 'Чем подробнее анкета персонажа, тем живее получится история. Укажите не только внешность, но и мотивацию.'
-              },
-              {
-                icon: 'Palette',
-                title: 'Подбирайте стиль иллюстраций под жанр',
-                desc: 'Для фэнтези подойдёт масляная живопись, для детектива — мрачные тона, для романа — акварель.'
-              },
-              {
-                icon: 'BookOpen',
-                title: 'Начните с малого объёма',
-                desc: 'Для первой книги выберите 50-100 страниц, чтобы быстрее увидеть результат и понять структуру.'
-              }
-            ].map((tip, idx) => (
-              <Card key={idx} className="flex items-start gap-4 p-4">
-                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                  <Icon name={tip.icon as any} size={24} />
-                </div>
+                <AccordionItem value="generation-issues">
+                  <AccordionTrigger>Проблемы с генерацией</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Если книга не генерируется:</strong></p>
+                      <p>• Убедитесь, что заполнены все обязательные поля (жанр, название, идея)</p>
+                      <p>• Проверьте стабильность интернет-соединения</p>
+                      <p>• Попробуйте сократить описание или упростить запрос</p>
+                      <p>• Перезагрузите страницу и попробуйте снова</p>
+                      
+                      <p className="pt-3"><strong>Если иллюстрации не создаются:</strong></p>
+                      <p>• Уменьшите количество иллюстраций (начните с 3-5)</p>
+                      <p>• Подождите несколько минут между попытками</p>
+                      <p>• Проверьте, что название книги и жанр указаны корректно</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="edit-book">
+                  <AccordionTrigger>Как редактировать книгу?</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      <p>1. Перейдите в раздел "Библиотека"</p>
+                      <p>2. Найдите нужную книгу и нажмите кнопку "Редактировать"</p>
+                      <p>3. Все данные книги загрузятся в форму создания</p>
+                      <p>4. Внесите необходимые изменения в любую секцию</p>
+                      <p>5. Можете изменить жанры, персонажей, стиль или добавить иллюстрации</p>
+                      <p>6. Нажмите "Обновить книгу" для пересоздания с новыми параметрами</p>
+                      <p>7. Главы можно редактировать прямо в библиотеке через текстовые поля</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="technical">
+                  <AccordionTrigger>Технические проблемы</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Рекомендуемые браузеры:</strong></p>
+                      <p>• Google Chrome (последняя версия)</p>
+                      <p>• Mozilla Firefox (последняя версия)</p>
+                      <p>• Safari (последняя версия)</p>
+                      <p>• Microsoft Edge (последняя версия)</p>
+                      
+                      <p className="pt-3"><strong>Если что-то не работает:</strong></p>
+                      <p>1. Очистите кэш браузера (Ctrl+Shift+Delete)</p>
+                      <p>2. Проверьте подключение к интернету</p>
+                      <p>3. Обновите страницу (F5 или Cmd+R)</p>
+                      <p>4. Попробуйте войти заново</p>
+                      <p>5. Убедитесь, что JavaScript включен в настройках браузера</p>
+                      <p>6. Отключите блокировщики рекламы для этого сайта</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeSection === 'auth' && (
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle>{authMode === 'login' ? 'Вход' : 'Регистрация'}</CardTitle>
+              <CardDescription>
+                {authMode === 'login' 
+                  ? 'Войдите в свой аккаунт' 
+                  : 'Создайте новый аккаунт'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {authMode === 'register' && (
                 <div>
-                  <h3 className="font-semibold text-lg mb-1">{tip.title}</h3>
-                  <p className="text-muted-foreground">{tip.desc}</p>
+                  <Label htmlFor="auth-name">Имя</Label>
+                  <Input
+                    id="auth-name"
+                    value={authForm.name}
+                    onChange={(e) => setAuthForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Ваше имя"
+                  />
                 </div>
-              </Card>
-            ))}
-          </TabsContent>
+              )}
 
-          <TabsContent value="examples" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Пример персонажа для фэнтези</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p><strong>Имя:</strong> Элара Светлокрылая</p>
-                <p><strong>Возраст:</strong> 18 лет</p>
-                <p><strong>Внешность:</strong> Длинные серебристые волосы, изумрудные глаза, хрупкого телосложения</p>
-                <p><strong>Характер:</strong> Смелая, но импульсивная. Верит в справедливость и готова рисковать ради других</p>
-                <p><strong>Предыстория:</strong> Воспитана в деревне магов, не знала о своём королевском происхождении</p>
-                <p><strong>Мотивация:</strong> Вернуть трон и освободить королевство от тирании тёмного мага</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  );
-
-  const renderAuth = () => (
-    <div className="py-12 px-6 animate-fade-in">
-      <div className="container mx-auto max-w-md">
-        <Card className="shadow-xl">
-          <CardHeader>
-            <CardTitle className="text-3xl text-center">
-              {authMode === 'login' ? 'Вход' : 'Регистрация'}
-            </CardTitle>
-            <CardDescription className="text-center">
-              {authMode === 'login' 
-                ? 'Войдите чтобы сохранять ваши книги' 
-                : 'Создайте аккаунт для сохранения книг'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {authMode === 'register' && (
-              <div className="space-y-2">
-                <Label>Имя</Label>
-                <Input 
-                  value={authForm.name}
-                  onChange={(e) => setAuthForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ваше имя"
+              <div>
+                <Label htmlFor="auth-email">Email</Label>
+                <Input
+                  id="auth-email"
+                  type="email"
+                  value={authForm.email}
+                  onChange={(e) => setAuthForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="your@email.com"
                 />
               </div>
-            )}
-            
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input 
-                type="email"
-                value={authForm.email}
-                onChange={(e) => setAuthForm(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="your@email.com"
-              />
-            </div>
 
-            <div className="space-y-2">
-              <Label>Пароль</Label>
-              <Input 
-                type="password"
-                value={authForm.password}
-                onChange={(e) => setAuthForm(prev => ({ ...prev, password: e.target.value }))}
-                placeholder="••••••••"
-              />
-            </div>
+              <div>
+                <Label htmlFor="auth-password">Пароль</Label>
+                <Input
+                  id="auth-password"
+                  type="password"
+                  value={authForm.password}
+                  onChange={(e) => setAuthForm(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="••••••••"
+                />
+              </div>
 
-            <Button onClick={handleAuth} className="w-full gap-2" size="lg">
-              <Icon name={authMode === 'login' ? 'LogIn' : 'UserPlus'} size={20} />
-              {authMode === 'login' ? 'Войти' : 'Зарегистрироваться'}
-            </Button>
+              <Button onClick={handleAuth} className="w-full">
+                {authMode === 'login' ? 'Войти' : 'Зарегистрироваться'}
+              </Button>
 
-            <div className="text-center text-sm">
-              {authMode === 'login' ? (
-                <p>
-                  Нет аккаунта?{' '}
-                  <button 
-                    onClick={() => setAuthMode('register')}
-                    className="text-primary underline"
-                  >
-                    Зарегистрироваться
-                  </button>
-                </p>
-              ) : (
-                <p>
-                  Уже есть аккаунт?{' '}
-                  <button 
-                    onClick={() => setAuthMode('login')}
-                    className="text-primary underline"
-                  >
-                    Войти
-                  </button>
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
-      {renderNavigation()}
-      {activeSection === 'home' && renderHome()}
-      {activeSection === 'form' && renderForm()}
-      {activeSection === 'library' && renderLibrary()}
-      {activeSection === 'help' && renderHelp()}
-      {activeSection === 'auth' && renderAuth()}
+              <div className="text-center">
+                <Button
+                  variant="link"
+                  onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                >
+                  {authMode === 'login' 
+                    ? 'Нет аккаунта? Зарегистрироваться' 
+                    : 'Уже есть аккаунт? Войти'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        <InteractiveAvatar />
+      </main>
     </div>
   );
 };

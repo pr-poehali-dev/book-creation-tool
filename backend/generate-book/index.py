@@ -38,15 +38,31 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         
         title = body_data.get('title', '')
-        genre = body_data.get('genre', '')
+        
+        genre_data = body_data.get('genre', '')
+        if isinstance(genre_data, list):
+            genre = ', '.join(genre_data)
+        else:
+            genre = genre_data
+            
         description = body_data.get('description', '')
         idea = body_data.get('idea', '')
         characters = body_data.get('characters', [])
         turning_point = body_data.get('turningPoint', '')
         unique_features = body_data.get('uniqueFeatures', '')
         pages = body_data.get('pages', '100-200')
-        writing_style = body_data.get('writingStyle', 'literary')
-        text_tone = body_data.get('textTone', 'serious')
+        
+        style_data = body_data.get('writingStyle', 'literary')
+        if isinstance(style_data, list):
+            writing_style = ', '.join(style_data)
+        else:
+            writing_style = style_data
+            
+        tone_data = body_data.get('textTone', 'serious')
+        if isinstance(tone_data, list):
+            text_tone = ', '.join(tone_data)
+        else:
+            text_tone = tone_data
         
         api_key_base64 = os.environ.get('GIGACHAT_API_KEY')
         if not api_key_base64:
