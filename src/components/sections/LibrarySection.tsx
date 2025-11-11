@@ -30,9 +30,13 @@ const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew }: Librar
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold mb-8 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-          Моя библиотека
-        </h2>
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <Icon name="Sparkles" className="w-7 h-7 text-black" />
+          <h2 className="text-4xl font-bold text-black">
+            Моя библиотека
+          </h2>
+          <Icon name="Sparkles" className="w-7 h-7 text-black" />
+        </div>
 
         {books.length === 0 ? (
           <Card className="text-center py-12">

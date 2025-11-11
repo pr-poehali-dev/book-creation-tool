@@ -139,9 +139,12 @@ const BookForm = ({
     <div className="container mx-auto px-6 py-12">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-3xl">
-            {editingBook ? 'Редактировать книгу' : 'Создать новую книгу'}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Icon name="Sparkles" className="w-6 h-6 text-black" />
+            <CardTitle className="text-3xl">
+              {editingBook ? 'Редактировать книгу' : 'Создать новую книгу'}
+            </CardTitle>
+          </div>
           <CardDescription>
             Заполните информацию о вашей будущей книге
           </CardDescription>

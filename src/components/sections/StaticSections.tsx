@@ -16,9 +16,13 @@ export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-4xl mx-auto text-center mb-16">
-        <h2 className="text-5xl font-bold mb-6 text-black">
-          Создайте свою книгу с помощью ИИ
-        </h2>
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <Icon name="Sparkles" className="w-8 h-8 text-black" />
+          <h2 className="text-5xl font-bold text-black">
+            Создайте свою книгу с помощью ИИ
+          </h2>
+          <Icon name="Sparkles" className="w-8 h-8 text-black" />
+        </div>
         <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
           Превратите свои идеи в полноценные литературные произведения с иллюстрациями. 
           Искусственный интеллект поможет вам создать уникальную историю от первой строки до последней главы.
@@ -79,7 +83,11 @@ export const HomeSection = ({ user, onNavigateToForm }: HomeSectionProps) => {
       <div className="border-t border-gray-200 my-12"></div>
 
       <div className="max-w-5xl mx-auto">
-        <h3 className="text-3xl font-bold text-black text-center mb-10">Как это работает</h3>
+        <div className="flex items-center justify-center gap-2 mb-10">
+          <Icon name="Sparkles" className="w-6 h-6 text-black" />
+          <h3 className="text-3xl font-bold text-black">Как это работает</h3>
+          <Icon name="Sparkles" className="w-6 h-6 text-black" />
+        </div>
         <div className="grid md:grid-cols-4 gap-6">
           <div className="text-center">
             <div className="w-14 h-14 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
@@ -218,9 +226,13 @@ export const WritersSection = () => {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-bold mb-8 text-center text-black">
-          Великие писатели мира
-        </h2>
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <Icon name="Sparkles" className="w-7 h-7 text-black" />
+          <h2 className="text-4xl font-bold text-black">
+            Великие писатели мира
+          </h2>
+          <Icon name="Sparkles" className="w-7 h-7 text-black" />
+        </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {worldWriters.map((writer) => (
@@ -270,9 +282,13 @@ export const HelpSection = () => {
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-4xl font-bold mb-8 text-center text-black">
-          Помощь и FAQ
-        </h2>
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <Icon name="Sparkles" className="w-7 h-7 text-black" />
+          <h2 className="text-4xl font-bold text-black">
+            Помощь и FAQ
+          </h2>
+          <Icon name="Sparkles" className="w-7 h-7 text-black" />
+        </div>
 
         <Card>
           <CardContent className="pt-6">
