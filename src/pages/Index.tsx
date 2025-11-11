@@ -6,6 +6,7 @@ import Navigation from '@/components/sections/Navigation';
 import BookForm from '@/components/sections/BookForm';
 import LibrarySection from '@/components/sections/LibrarySection';
 import { HomeSection, AuthSection, WritersSection, HelpSection } from '@/components/sections/StaticSections';
+import Icon from '@/components/ui/icon';
 
 type Character = {
   id: string;
@@ -59,6 +60,7 @@ const Index = () => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' });
   const [editingBook, setEditingBook] = useState<string | null>(null);
+  const [viewingBook, setViewingBook] = useState<(BookData & { id: string }) | null>(null);
   
   const [currentCharacter, setCurrentCharacter] = useState<Omit<Character, 'id'>>({
     name: '',
@@ -599,6 +601,7 @@ const Index = () => {
             onEditBook={startEditingBook}
             onDeleteBook={deleteBook}
             onCreateNew={() => setActiveSection('form')}
+            onViewBook={setViewingBook}
           />
         </div>
       )}
@@ -649,6 +652,73 @@ const Index = () => {
       )}
 
       <InteractiveAvatar />
+      
+      {viewingBook && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="BookOpen" className="w-6 h-6 text-black" />
+                <h2 className="text-2xl font-bold text-black">{viewingBook.title}</h2>
+              </div>
+              <button
+                onClick={() => setViewingBook(null)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Icon name="X" className="w-6 h-6 text-black" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="mb-6">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {viewingBook.genre.map((g, idx) => (
+                    <span key={idx} className="px-3 py-1 bg-black text-white rounded-full text-sm">
+                      {g}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-gray-700 text-lg mb-4">{viewingBook.description}</p>
+                {viewingBook.generatedImages && viewingBook.generatedImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    {viewingBook.generatedImages.slice(0, 3).map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`Иллюстрация ${idx + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {viewingBook.chapters && viewingBook.chapters.length > 0 ? (
+                <div className="space-y-8">
+                  {viewingBook.chapters.map((chapter, idx) => (
+                    <div key={idx} className="border-l-4 border-black pl-6">
+                      <h3 className="text-xl font-bold text-black mb-4 flex items-center gap-2">
+                        <Icon name="Sparkles" className="w-5 h-5" />
+                        {chapter.title}
+                      </h3>
+                      <div className="prose prose-gray max-w-none">
+                        {chapter.text.split('\n').map((paragraph, pIdx) => (
+                          paragraph.trim() && <p key={pIdx} className="mb-3 text-gray-700 leading-relaxed">{paragraph}</p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Icon name="BookOpen" className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">В этой книге пока нет текста</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

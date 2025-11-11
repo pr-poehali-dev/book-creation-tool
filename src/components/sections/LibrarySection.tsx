@@ -24,9 +24,10 @@ interface LibrarySectionProps {
   onEditBook: (book: BookData & { id: string }) => void;
   onDeleteBook: (id: string) => void;
   onCreateNew: () => void;
+  onViewBook: (book: BookData & { id: string }) => void;
 }
 
-const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew }: LibrarySectionProps) => {
+const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew, onViewBook }: LibrarySectionProps) => {
   const downloadBook = (book: BookData & { id: string }) => {
     if (!book.chapters || book.chapters.length === 0) {
       alert('В этой книге пока нет текста для скачивания');
@@ -120,7 +121,7 @@ const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew }: Librar
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onEditBook(book)}
+                        onClick={() => onViewBook(book)}
                         className="flex-1"
                       >
                         <Icon name="BookOpen" className="w-4 h-4 mr-1" />
