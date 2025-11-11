@@ -60,7 +60,7 @@ const InteractiveAvatar = () => {
 
   return (
     <Card 
-      className="fixed bottom-6 right-6 p-4 max-w-md shadow-xl bg-white border-gray-200 cursor-pointer hover:shadow-2xl transition-all duration-300 z-50"
+      className="fixed bottom-6 left-6 p-4 max-w-md shadow-xl bg-white border-gray-200 cursor-pointer hover:shadow-2xl transition-all duration-300 z-50"
       onClick={showRandomMessage}
     >
       <div className="flex gap-3 items-start">

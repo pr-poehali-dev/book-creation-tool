@@ -76,32 +76,47 @@ const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew }: Librar
                   <p className="text-sm text-gray-600 line-clamp-3 mb-4">
                     {book.description}
                   </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEditBook(book)}
-                      className="flex-1"
-                    >
-                      <Icon name="Edit" className="w-4 h-4 mr-1" />
-                      Редактировать
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDeleteBook(book.id)}
-                      className="flex-1"
-                    >
-                      <Icon name="Trash2" className="w-4 h-4 mr-1" />
-                      Удалить
-                    </Button>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEditBook(book)}
+                        className="flex-1"
+                      >
+                        <Icon name="Edit" className="w-4 h-4 mr-1" />
+                        Редактировать
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onDeleteBook(book.id)}
+                        className="flex-1"
+                      >
+                        <Icon name="Trash2" className="w-4 h-4 mr-1" />
+                        Удалить
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEditBook(book)}
+                        className="flex-1"
+                      >
+                        <Icon name="BookOpen" className="w-4 h-4 mr-1" />
+                        Открыть
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Icon name="Download" className="w-4 h-4 mr-1" />
+                        Скачать
+                      </Button>
+                    </div>
                   </div>
-                  {book.chapters && book.chapters.length > 0 && (
-                    <Button variant="ghost" size="sm" className="w-full mt-2">
-                      <Icon name="Download" className="w-4 h-4 mr-2" />
-                      Скачать ({book.chapters.length} глав)
-                    </Button>
-                  )}
                 </CardContent>
               </Card>
             ))}

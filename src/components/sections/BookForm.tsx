@@ -449,7 +449,7 @@ const BookForm = ({
                       })
                     }
                     min={1}
-                    max={10}
+                    max={25}
                     step={1}
                   />
                 </div>
@@ -631,7 +631,7 @@ const BookForm = ({
                 <Button
                   onClick={onGenerateBook}
                   disabled={isGeneratingBook}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  className="flex-1 bg-black hover:bg-gray-800 text-white"
                 >
                   {isGeneratingBook ? (
                     <>
