@@ -95,6 +95,7 @@ interface BookFormProps {
   isCharacterDialogOpen: boolean;
   isGeneratingImages: boolean;
   isGeneratingBook: boolean;
+  generationProgress: { text: string; images: number; total: number };
   onInputChange: (field: keyof BookData, value: any) => void;
   onCharacterChange: (field: keyof Omit<Character, 'id'>, value: string) => void;
   onGenreToggle: (genre: string) => void;
@@ -120,6 +121,7 @@ const BookForm = ({
   isCharacterDialogOpen,
   isGeneratingImages,
   isGeneratingBook,
+  generationProgress,
   onInputChange,
   onCharacterChange,
   onGenreToggle,
@@ -623,8 +625,27 @@ const BookForm = ({
                 </div>
               </div>
 
+              {isGeneratingBook && (
+                <div className="bg-gray-100 rounded-lg p-4 mb-4 border-2 border-black">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon name="Loader2" className="w-5 h-5 animate-spin text-black" />
+                    <span className="font-semibold text-black">Генерация книги</span>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Icon name="Image" className="w-4 h-4 text-black" />
+                      <span>Иллюстрации: {generationProgress.images} / {generationProgress.total}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Icon name="BookOpen" className="w-4 h-4 text-black" />
+                      <span>{generationProgress.text || 'Ожидание...'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setFormStep('illustrations')} className="flex-1">
+                <Button variant="outline" onClick={() => setFormStep('illustrations')} className="flex-1" disabled={isGeneratingBook}>
                   <Icon name="ArrowLeft" className="w-4 h-4 mr-2" />
                   Назад
                 </Button>

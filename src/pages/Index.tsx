@@ -54,6 +54,7 @@ const Index = () => {
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [isGeneratingImages, setIsGeneratingImages] = useState(false);
   const [isGeneratingBook, setIsGeneratingBook] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState({ text: '', images: 0, total: 0 });
   const [user, setUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authForm, setAuthForm] = useState({ email: '', password: '', name: '' });
@@ -361,73 +362,98 @@ const Index = () => {
     }
 
     setIsGeneratingBook(true);
+    setGenerationProgress({ text: '', images: 0, total: currentBook.illustrations.count });
+    
     try {
-      toast.info('Начинаем генерацию книги и иллюстраций параллельно...');
+      toast.info('🚀 Начинаем генерацию книги и иллюстраций параллельно...');
 
       const generateImagesTask = async () => {
         if (currentBook.generatedImages.length > 0) {
+          setGenerationProgress(prev => ({ ...prev, images: currentBook.generatedImages.length }));
           return currentBook.generatedImages;
         }
 
         const count = currentBook.illustrations.count;
         const generatedUrls: string[] = [];
 
-        const imagePromises = [];
         for (let i = 0; i < count; i++) {
-          const prompt = `Book illustration for "${currentBook.title}": ${currentBook.description}. 
-          Style: ${currentBook.illustrations.style}, 
-          Color scheme: ${currentBook.illustrations.colorScheme}, 
-          Mood: ${currentBook.illustrations.mood}. 
-          High quality, professional book cover art.`;
+          const prompt = `Book illustration for "${currentBook.title}": ${currentBook.description}. Style: ${currentBook.illustrations.style}, Color scheme: ${currentBook.illustrations.colorScheme}, Mood: ${currentBook.illustrations.mood}. High quality, professional book cover art.`;
 
-          imagePromises.push(
-            fetch('https://functions.poehali.dev/8342cb64-c8b1-46f4-8730-6216bd5465fd', {
+          try {
+            const response = await fetch('https://functions.poehali.dev/8342cb64-c8b1-46f4-8730-6216bd5465fd', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ prompt })
-            }).then(async (response) => {
-              if (!response.ok) throw new Error(`Ошибка генерации иллюстрации ${i + 1}`);
-              const data = await response.json();
-              toast.success(`Иллюстрация ${i + 1} из ${count} готова!`);
-              return data.url;
-            })
-          );
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`Ошибка генерации иллюстрации ${i + 1}:`, errorText);
+              throw new Error(`Ошибка генерации иллюстрации ${i + 1}: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            generatedUrls.push(data.url);
+            setGenerationProgress(prev => ({ ...prev, images: i + 1 }));
+            toast.success(`✅ Иллюстрация ${i + 1} из ${count} готова!`);
+          } catch (error: any) {
+            console.error(`Ошибка при генерации иллюстрации ${i + 1}:`, error);
+            toast.error(`Ошибка иллюстрации ${i + 1}: ${error.message}`);
+            throw error;
+          }
         }
 
-        return await Promise.all(imagePromises);
+        return generatedUrls;
       };
 
       const generateTextTask = async () => {
-        toast.info('Генерация текста книги...');
+        setGenerationProgress(prev => ({ ...prev, text: '⏳ Генерация текста...' }));
+        toast.info('📚 Генерация текста книги...');
         
-        const response = await fetch('https://functions.poehali.dev/2f50210e-c8d5-4275-968b-16b64e5f5d39', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: currentBook.title,
-            genre: currentBook.genre,
-            description: currentBook.description,
-            idea: currentBook.idea,
-            characters: currentBook.characters,
-            turningPoint: currentBook.turningPoint,
-            uniqueFeatures: currentBook.uniqueFeatures,
-            pages: currentBook.pages,
-            writingStyle: currentBook.writingStyle,
-            textTone: currentBook.textTone
-          })
-        });
+        try {
+          const response = await fetch('https://functions.poehali.dev/2f50210e-c8d5-4275-968b-16b64e5f5d39', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: currentBook.title,
+              genre: currentBook.genre,
+              description: currentBook.description,
+              idea: currentBook.idea,
+              characters: currentBook.characters,
+              turningPoint: currentBook.turningPoint,
+              uniqueFeatures: currentBook.uniqueFeatures,
+              pages: currentBook.pages,
+              writingStyle: currentBook.writingStyle,
+              textTone: currentBook.textTone
+            })
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Ошибка генерации текста книги');
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Ошибка генерации текста:', errorText);
+            let errorData;
+            try {
+              errorData = JSON.parse(errorText);
+            } catch {
+              errorData = { error: `HTTP ${response.status}: ${errorText}` };
+            }
+            throw new Error(errorData.error || errorData.details || 'Ошибка генерации текста книги');
+          }
+
+          const data = await response.json();
+          setGenerationProgress(prev => ({ ...prev, text: `✅ ${data.total_chapters} глав готово!` }));
+          toast.success(`✅ Текст книги сгенерирован! ${data.total_chapters} глав`);
+          return data.chapters;
+        } catch (error: any) {
+          console.error('Ошибка при генерации текста:', error);
+          setGenerationProgress(prev => ({ ...prev, text: '❌ Ошибка текста' }));
+          throw error;
         }
-
-        const data = await response.json();
-        toast.success(`Текст книги сгенерирован! ${data.total_chapters} глав`);
-        return data.chapters;
       };
 
       const [images, chapters] = await Promise.all([generateImagesTask(), generateTextTask()]);
+
+      toast.info('💾 Сохранение книги в базу данных...');
 
       const bookData = {
         title: currentBook.title,
@@ -452,10 +478,10 @@ const Index = () => {
 
       if (editingBook) {
         await booksApi.updateBook(parseInt(editingBook), bookData);
-        toast.success('Книга обновлена!');
+        toast.success('✅ Книга обновлена!');
       } else {
         await booksApi.createBook(bookData);
-        toast.success('Книга создана!');
+        toast.success('✅ Книга создана!');
       }
 
       await loadBooks();
@@ -482,9 +508,11 @@ const Index = () => {
       setEditingBook(null);
       setActiveSection('library');
     } catch (error: any) {
-      toast.error(error.message || 'Ошибка при создании книги');
+      console.error('Полная ошибка при создании книги:', error);
+      toast.error(`❌ ${error.message || 'Ошибка при создании книги'}`);
     } finally {
       setIsGeneratingBook(false);
+      setGenerationProgress({ text: '', images: 0, total: 0 });
     }
   };
 
@@ -538,6 +566,7 @@ const Index = () => {
             isCharacterDialogOpen={isCharacterDialogOpen}
             isGeneratingImages={isGeneratingImages}
             isGeneratingBook={isGeneratingBook}
+            generationProgress={generationProgress}
             onInputChange={handleInputChange}
             onCharacterChange={handleCharacterChange}
             onGenreToggle={handleGenreToggle}

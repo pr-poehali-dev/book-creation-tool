@@ -27,6 +27,25 @@ interface LibrarySectionProps {
 }
 
 const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew }: LibrarySectionProps) => {
+  const downloadBook = (book: BookData & { id: string }) => {
+    if (!book.chapters || book.chapters.length === 0) {
+      alert('В этой книге пока нет текста для скачивания');
+      return;
+    }
+
+    const bookContent = `${book.title}\n\n${'='.repeat(50)}\n\nАвтор: AI Generated\nЖанр: ${book.genre.join(', ')}\n\n${book.description}\n\n${'='.repeat(50)}\n\n${book.chapters.map(ch => `\n\n# ${ch.title}\n\n${ch.text}`).join('\n\n')}`;
+    
+    const blob = new Blob([bookContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${book.title}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="container mx-auto px-6 py-12">
       <div className="max-w-6xl mx-auto">
@@ -110,6 +129,7 @@ const LibrarySection = ({ books, onEditBook, onDeleteBook, onCreateNew }: Librar
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => downloadBook(book)}
                         className="flex-1"
                       >
                         <Icon name="Download" className="w-4 h-4 mr-1" />
